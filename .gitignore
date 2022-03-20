@@ -1,3 +1,6 @@
+#Ignore the dataset
+Dataset/*
+
 # History files
 .Rhistory
 .Rapp.history
