@@ -20,7 +20,7 @@ knitr::opts_chunk$set(echo = TRUE)
 \end{itemize}
 ```
 ```{r}
-# The dataset should be imported in a folder called "Dataset"
+# The data set should be imported in a folder called "Dataset"
 
 data_patient= read.delim(file.path("Dataset", "data_clinical_patient.txt"), header = TRUE, comment.char = '#')
 
@@ -59,7 +59,7 @@ indexes = match(selected_cells, colnames(data_treatment_auc))
 indexes
 ```
 
-I can't understand why I receive the numbers in this order, but we found 45 data as said in the website.
+We found 45 data as said in the website.
 
 ```{r}
 sum(is.na(indexes))
