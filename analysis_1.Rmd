@@ -19,7 +19,6 @@ knitr::opts_chunk$set(echo = TRUE)
   \item In data_sample, you find all the data on studied cells. 
 \end{itemize}
 ```
-
 ```{r}
 # The dataset should be imported in a folder called "Dataset"
 
@@ -60,7 +59,7 @@ indexes = match(selected_cells, colnames(data_treatment_auc))
 indexes
 ```
 
-I can't understand why finally I receive only 43 values instead of 45
+I can't understand why I receive the numbers in this order, but we found 45 data as said in the website.
 
 ```{r}
 sum(is.na(indexes))
@@ -77,3 +76,5 @@ match(c(4,8),x)
 cancer_data_treatment_auc = data_treatment_auc[, na.omit(indexes)]
 str(cancer_data_treatment_auc)
 ```
+
+TO BE DONE: REGRESSION AND PCA IN FILES OF THE FORMAT analysis_name_of_the_person
