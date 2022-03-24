@@ -31,15 +31,30 @@ data_sample= read.delim(file.path("Dataset",'data_clinical_sample.txt'), header 
 
 ## Selecting Invasive Breast Carcinoma data
 
-Let's focus on Breast Cancer. First, we need to understand which studied cells of data_sample were taken by patients Invasive Breast Carcinoma patients.
+Let's focus on Breast Cancer. Under this category, we find Chondrosarcoma,Invasive Breast Carcinoma and Mixed Cancer. Let's consider "Invasive Breast Carcinoma patients".
 
-```{r}
+First, we need to understand which studied cells of data_sample were taken by Invasive Breast Carcinoma patients.
+
+```{r eval=FALSE, include=FALSE}
 selected_values =data_sample[data_sample$"CANCER_TYPE_DETAILED"=="Invasive Breast Carcinoma",]
 selected_cells = selected_values$SAMPLE_ID
 
 selected_cells = na.omit(selected_cells) #57 values
 #selected_cells = as.character(na.omit(selected_cells)) #57 values
 selected_cells
+```
+
+```{r}
+table(factor(data_sample$CANCER_TYPE_DETAILED))
+```
+
+```{r}
+#equivalently we could have done:
+
+library(dplyr)
+selected_cells <- filter(data_sample, CANCER_TYPE_DETAILED == 'Invasive Breast Carcinoma' )
+selected_cells <- selected_cells$SAMPLE_ID
+
 ```
 
 ![website_screenshot](dataset_explained.png) Apparently, some of this cells weren't studied in vitro: indeed these columns are not present in the data_treatment_auc dataset (you can see that in auc we have just 45)
@@ -62,7 +77,10 @@ indexes
 We found 45 data as said in the website.
 
 ```{r}
-sum(is.na(indexes))
+library(naniar)
+#sum(is.na(indexes))
+n_miss(indexes)
+prop_miss(indexes) #21% of patients' cell are not studied
 ```
 
 ```{r eval=FALSE, include=FALSE}
@@ -73,8 +91,173 @@ match(c(4,8),x)
 ```
 
 ```{r}
-cancer_data_treatment_auc = data_treatment_auc[, na.omit(indexes)]
-str(cancer_data_treatment_auc)
+breast_data_treatment_auc = data_treatment_auc[,na.omit(indexes)]
+#rownames(breast_data_treatment_auc,data_treatment_auc$ENTITY_STABLE_ID) #non va
+str(breast_data_treatment_auc)
+
+#
+library(stringr)
+old_names <- colnames(breast_data_treatment_auc)
+new_names <- str_remove(old_names, "_BREAST")
+
+library(data.table)
+setnames(breast_data_treatment_auc, old = old_names, new = new_names)
+head(breast_data_treatment_auc)
 ```
 
-TO BE DONE: REGRESSION AND PCA IN FILES OF THE FORMAT analysis_name_of_the_person
+## ANALYSIS OF MISSING VALUES
+
+```{r}
+library(naniar)
+miss_var_summary(breast_data_treatment_auc)
+miss_case_summary(breast_data_treatment_auc)
+miss_var_table(breast_data_treatment_auc) #by cell
+miss_case_table(breast_data_treatment_auc) #By drug
+```
+
+take 100-150 treatments (maybe less)
+
+and maybe half of drugs
+
+```{r}
+#VISUALIZATION
+vis_miss(breast_data_treatment_auc)
+gg_miss_var(breast_data_treatment_auc) #by cell
+gg_miss_case(breast_data_treatment_auc) #by drugs
+
+```
+
+```{r}
+#check if there are strange missing values
+miss_scan_count(data = breast_data_treatment_auc, search = list("N/A", "missing", "na", " "))
+#not present
+```
+
+## Missing Data dependence
+
+```{r}
+vis_miss(breast_data_treatment_auc, cluster=TRUE)
+```
+
+# 
+
+```{r}
+#shadow and nabular matrix
+bind_shadow(breast_data_treatment_auc)
+```
+
+```{r eval=FALSE, include=FALSE}
+library(corrplot)
+library(RColorBrewer)
+M <-cor(breast_data_treatment_auc)
+corrplot(M, type="upper", order="hclust",
+         )
+```
+
+## ANALYSIS OF OTHER CANCERS
+
+```{r}
+#equivalently we could have done:
+
+selected_cells <- filter(data_sample, CANCER_TYPE_DETAILED == 'Pancreatic Adenocarcinoma' )
+selected_cells <- selected_cells$SAMPLE_ID
+indexes = match(selected_cells, colnames(data_treatment_auc))
+temp = data_treatment_auc[,na.omit(indexes)]
+#rownames(breast_data_treatment_auc,data_treatment_auc$ENTITY_STABLE_ID) #non va
+str(temp)
+miss_var_summary(temp)
+miss_case_summary(temp)
+miss_var_table(temp) #by cell
+miss_case_table(temp) #By drug
+
+#VISUALIZATION
+vis_miss(temp)
+gg_miss_var(temp) #by cell
+gg_miss_case(temp) #by drugs
+vis_miss(temp, cluster= TRUE)
+```
+
+```{r}
+selected_cells <- filter(data_sample, CANCER_TYPE_DETAILED == 'Small Cell Lung Cancer' )
+selected_cells <- selected_cells$SAMPLE_ID
+indexes = match(selected_cells, colnames(data_treatment_auc))
+temp = data_treatment_auc[,na.omit(indexes)]
+#rownames(breast_data_treatment_auc,data_treatment_auc$ENTITY_STABLE_ID) #non va
+str(temp)
+miss_var_summary(temp)
+miss_case_summary(temp)
+miss_var_table(temp) #by cell
+miss_case_table(temp) #By drug
+
+#VISUALIZATION
+vis_miss(temp)
+gg_miss_var(temp) #by cell
+gg_miss_case(temp) #by drugs
+vis_miss(temp, cluster= TRUE)
+```
+
+```{r}
+selected_cells <- filter(data_sample, CANCER_TYPE_DETAILED == 'Colorectal Adenocarcinoma' )
+selected_cells <- selected_cells$SAMPLE_ID
+indexes = match(selected_cells, colnames(data_treatment_auc))
+temp = data_treatment_auc[,na.omit(indexes)]
+#rownames(breast_data_treatment_auc,data_treatment_auc$ENTITY_STABLE_ID) #non va
+str(temp)
+miss_var_summary(temp)
+miss_case_summary(temp)
+miss_var_table(temp) #by cell
+miss_case_table(temp) #By drug
+
+#VISUALIZATION
+vis_miss(temp)
+gg_miss_var(temp) #by cell
+gg_miss_case(temp) #by drugs
+vis_miss(temp, cluster= TRUE)
+```
+
+```{r}
+vis_miss(data_treatment_auc, show_perc = TRUE)
+```
+
+```{r}
+boxplot(x=t(breast_data_treatment_auc), col='gold')
+```
+
+```{r}
+IQR(t(breast_data_treatment_auc[]), na.rm = TRUE)
+```
+
+```{r}
+heatmap(as.matrix(breast_data_treatment_auc, na.rm = TRUE))
+```
+
+```{r}
+library(heatmaply)
+heatmaply_na(
+  breast_data_treatment_auc[1:30, ],
+  showticklabels = c(TRUE, FALSE)
+)
+```
+
+```{r}
+image(as.matrix(breast_data_treatment_auc))
+```
+
+Creazione dell'heatmap con i valori e controllare che non abbiano lo stesso comportamento i trattamenti eliminati/selezionati
+
+0.5 for NAN![](data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACgAAAAaCAYAAADFTB7LAAAAcElEQVR4Xu3OwQmAQAxE0bClWYCW5N06tM6V2YPg5CjoF/JhLoHAi6iqn9eOefUbqrYvHY0cQDLyAlKRNyARmYA0ZMLRkAlGQyaU72tkAtlim7r/vJqDUDjlKBROOQyFU2icQuMUGqfQuBEaV1XPOwEx96nYACK8+wAAAABJRU5ErkJggg== "Run Current Chunk")
+
+[IC50 i consider the median and if it's above we normally put 0]
+
+so for the ic50 we filll by 0
+
+1.  Doing the heatmap
+2.  Select a
+3.  PCA on 3 components (on normalized data/and not normalized data)
+4.  we plot the components in spaces and see if there are some clusters
+5.  Look at the dataset of expression (see same methods)
+6.  rmka pca will be totally black with some
+
+We select the cell lines and we look at the expression, see variance with data and understand how to treat it.
+
+PCA on the expression data set.
