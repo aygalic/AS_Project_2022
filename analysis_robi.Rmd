@@ -1,0 +1,111 @@
+#import data
+data_patient= read.delim(file.path("Dataset", "data_clinical_patient.txt"), header = TRUE, comment.char = '#')
+
+data_treatment_auc= read.delim(file.path("Dataset", 'data_drug_treatment_auc.txt'), header = TRUE, comment.char = '#')
+
+data_sample= read.delim(file.path("Dataset",'data_clinical_sample.txt'), header = TRUE, comment.char = '#')
+
+#select cells from breast carcinoma patients
+selected_values = data_sample[data_sample$"CANCER_TYPE_DETAILED"=="Invasive Breast Carcinoma",]
+selected_cells = selected_values$SAMPLE_ID
+
+selected_cells = na.omit(selected_cells) # I get 57 values
+#selected_cells = as.character(na.omit(selected_cells)) #57 values
+selected_cells 
+
+for (i in 1:57){
+  print(paste0("Looking for ", selected_cells[i]) )
+  reduced_dataset = data_treatment_auc[selected_cells[i]]
+  reduced_dataset
+} 
+#I get an error because not all the 57 cell lines about breast cancer have been studied in vitro, only 45.
+
+indexes = match(selected_cells, colnames(data_treatment_auc))
+indexes
+
+sum(is.na(indexes)) 
+#there are 12 NA so we end up with data on AUC for 45 cell lines with breast cancer
+
+cancer_data_treatment_auc = data_treatment_auc[, c(1, na.omit(indexes)) ]
+
+dim(cancer_data_treatment_auc)
+#we have 266 rows and 46 columns (45 cell lines + names of the drugs)
+
+col_names = names(cancer_data_treatment_auc)
+perc_NA_col = colMeans(is.na(cancer_data_treatment_auc))*100
+
+for(i in 1:45){
+  cat("For the cell line", col_names[i+1], "there is", perc_NA_col[i+1], "% of missing values \n")
+}
+
+row_names = cancer_data_treatment_auc[,1]
+perc_NA_row = rowMeans(is.na(cancer_data_treatment_auc))*100
+
+for(i in 1:266){
+  cat("For the drug", row_names[i], "there is", perc_NA_row[i], "% of missing values \n")
+}
+
+mean(perc_NA_row) 
+#it'a equal to mean(perc_NA_col) and it's 20.46 % 
+
+#I think we should start deleting rows since a drug that has been tested on few patients it's probably not worth to be studied 
+
+#After deleting the rows with most missing values, I see again how many missing values are there until I reach the threshold of 2%
+
+#I start with 50% tolerance on the rows
+max_perc_row = max(perc_NA_row)
+while(max_perc_row > 50)
+{
+  index = match(max_perc_row, perc_NA_row)
+  cancer_data_treatment_auc = cancer_data_treatment_auc[-c(index),]
+  perc_NA_row = perc_NA_row[-c(index)]
+  max_perc_row = max(perc_NA_row)
+}
+View(cancer_data_treatment_auc)
+#from 266 to 224 rows
+
+#update the percentages
+perc_NA_col = colMeans(is.na(cancer_data_treatment_auc))*100
+#50% tolerance on the columns
+max_perc_col = max(perc_NA_col)
+while(max_perc_col > 50)
+{
+  index = match(max_perc_col, perc_NA_col)
+  cancer_data_treatment_auc = cancer_data_treatment_auc[,-c(index)]
+  perc_NA_col = perc_NA_col[-c(index)]
+  max_perc_col = max(perc_NA_col)
+}
+View(cancer_data_treatment_auc)
+#from 46 to 44 columns
+
+#update the percentages for rows
+perc_NA_row = rowMeans(is.na(cancer_data_treatment_auc))*100
+
+mean(perc_NA_row)
+mean(perc_NA_col)
+#it's 7,82 % for both (it must be)
+
+#I think I should put more restrictions on the rows
+
+#10% tolerance on the rows and I see if the mean percentage is 
+max_perc_row = max(perc_NA_row)
+while(max_perc_row > 10 && mean(perc_NA_row) > 2)
+{
+  index = match(max_perc_row, perc_NA_row)
+  cancer_data_treatment_auc = cancer_data_treatment_auc[-c(index),]
+  perc_NA_row = perc_NA_row[-c(index)]
+  max_perc_row = max(perc_NA_row)
+}
+View(cancer_data_treatment_auc)
+#from 224 to 143 rows
+
+#update the percentages for columns
+perc_NA_col = colMeans(is.na(cancer_data_treatment_auc))*100
+
+mean(perc_NA_row)
+mean(perc_NA_col)
+
+
+
+
+
