@@ -48,7 +48,7 @@ selected_cells
 table(factor(data_sample$CANCER_TYPE_DETAILED))
 ```
 
-```{r}
+```{r include=FALSE}
 #equivalently we could have done:
 
 library(dplyr)
@@ -105,6 +105,19 @@ setnames(breast_data_treatment_auc, old = old_names, new = new_names)
 head(breast_data_treatment_auc)
 ```
 
+I'm adding row names.
+
+```{r}
+breast_data_treatment_auc$ENTITY_STABLE_ID <- data_treatment_auc$ENTITY_STABLE_ID
+rownames(breast_data_treatment_auc)<-breast_data_treatment_auc$ENTITY_STABLE_ID
+breast_data_treatment_auc$ENTITY_STABLE_ID <- NULL
+breast_data_treatment_auc
+```
+
+```{r}
+breast_data_treatment_auc <- breast_data_treatment_auc[ , order(names(breast_data_treatment_auc))]
+```
+
 ## ANALYSIS OF MISSING VALUES
 
 ```{r}
@@ -139,7 +152,7 @@ miss_scan_count(data = breast_data_treatment_auc, search = list("N/A", "missing"
 vis_miss(breast_data_treatment_auc, cluster=TRUE)
 ```
 
-# 
+# SHADOW MATRIX
 
 ```{r}
 #shadow and nabular matrix
@@ -227,8 +240,8 @@ boxplot(x=t(breast_data_treatment_auc), col='gold')
 IQR(t(breast_data_treatment_auc[]), na.rm = TRUE)
 ```
 
-```{r}
-#heatmap(as.matrix(breast_data_treatment_auc, na.rm = TRUE))
+```{r eval=FALSE, include=FALSE}
+heatmap(as.matrix(breast_data_treatment_auc, na.rm = TRUE))
 ```
 
 ```{r eval=FALSE, include=FALSE}
@@ -239,14 +252,17 @@ heatmaply_na(
 )
 ```
 
-```{r}
+```{r include=FALSE}
 library(plotly)
 ```
 
 ```{r}
+to_be_plotted<-breast_data_treatment_auc
+rownames(to_be_plotted)<-NULL
 fig <- plot_ly(
-    x = rownames(breast_data_treatment_auc), y = colnames(breast_data_treatment_auc),
-    z = as.matrix(breast_data_treatment_auc), type = "heatmap"
+    x = colnames(to_be_plotted), y = rownames(breast_data_treatment_auc),
+    colors = colorRamp(c("red", "green")),
+    z = as.matrix(to_be_plotted), type = "heatmap"
 )  
 fig
 ```
@@ -255,9 +271,156 @@ fig
 image(as.matrix(breast_data_treatment_auc))
 ```
 
+## SELECTION OF DATA (Roberta)
+
+```{r}
+col_names = names(breast_data_treatment_auc)
+perc_NA_col = colMeans(is.na(breast_data_treatment_auc))*100
+for(i in 1:45){
+  cat("For the cell line", col_names[i], "there is", perc_NA_col[i], "% of missing values \n")
+}
+```
+
+```{r}
+row_names = rownames(breast_data_treatment_auc)
+perc_NA_row = rowMeans(is.na(breast_data_treatment_auc))*100
+
+for(i in 1:266){
+  cat("For the drug", row_names[i], "there is", perc_NA_row[i], "% of missing values \n")
+}
+```
+
+```{r}
+#my version
+mean(perc_NA_row) 
+#it'a equal to mean(perc_NA_col) and it's 20.46 % 
+
+#I think we should start deleting rows since a drug that has been tested on few patients it's probably not worth to be studied 
+
+#After deleting the rows with most missing values, I see again how many missing values are there until I reach the threshold of 2%
+
+#I start with 50% tolerance on the rows
+max_perc_row = max(perc_NA_row)
+row_indexes <- c()
+while(max_perc_row > 50)
+{
+  index = match(max_perc_row, perc_NA_row)
+  row_indexes <- c(row_indexes, index)
+  breast_data_treatment_auc = breast_data_treatment_auc[-c(index),]
+  perc_NA_row = perc_NA_row[-c(index)]
+  max_perc_row = max(perc_NA_row)
+}
+```
+
+```{r}
+mean(perc_NA_row) 
+#it'a equal to mean(perc_NA_col) and it's 20.46 % 
+
+#I think we should start deleting rows since a drug that has been tested on few patients it's probably not worth to be studied 
+
+#After deleting the rows with most missing values, I see again how many missing values are there until I reach the threshold of 2%
+
+#I start with 50% tolerance on the rows
+max_perc_row = max(perc_NA_row)
+
+while(max_perc_row > 50)
+{
+  index = match(max_perc_row, perc_NA_row)
+  row_indexes <- c(row_indexes, index)
+  breast_data_treatment_auc = breast_data_treatment_auc[-c(index),]
+  perc_NA_row = perc_NA_row[-c(index)]
+  max_perc_row = max(perc_NA_row)
+}
+View(breast_data_treatment_auc) #from 266 we have now 224 rows
+```
+
+```{r}
+#update the percentages
+perc_NA_col = colMeans(is.na(breast_data_treatment_auc))*100
+#50% tolerance on the columns
+max_perc_col = max(perc_NA_col)
+col_indexes<-c()
+while(max_perc_col > 50)
+{
+  index = match(max_perc_col, perc_NA_col)
+  col_indexes <- c(col_indexes, index)
+  breast_data_treatment_auc = breast_data_treatment_auc[,-c(index)]
+  perc_NA_col = perc_NA_col[-c(index)]
+  max_perc_col = max(perc_NA_col)
+}
+View(breast_data_treatment_auc)
+#from 46 to 44 columns
+```
+
+```{r}
+#update the percentages for rows
+perc_NA_row = rowMeans(is.na(breast_data_treatment_auc))*100
+
+mean(perc_NA_row)
+mean(perc_NA_col)
+#it's around 8 % for both
+```
+
+```{r}
+#I think I should put more restrictions on the rows (treatments)
+
+#10% tolerance on the rows and I see if the mean percentage is 
+max_perc_row = max(perc_NA_row)
+while(max_perc_row > 10 && mean(perc_NA_row) > 2)
+{
+  index = match(max_perc_row, perc_NA_row)
+  row_indexes <- c(row_indexes, index)
+  breast_data_treatment_auc = breast_data_treatment_auc[-c(index),]
+  perc_NA_row = perc_NA_row[-c(index)]
+  max_perc_row = max(perc_NA_row)
+}
+View(breast_data_treatment_auc)
+#from 224 to 143 rows
+
+#update the percentages for columns
+perc_NA_col = colMeans(is.na(breast_data_treatment_auc))*100
+
+mean(perc_NA_row)
+mean(perc_NA_col)
+```
+
+```{r heatmap of selected data}
+to_be_plotted<-breast_data_treatment_auc
+rownames(to_be_plotted)<-NULL
+fig <- plot_ly(
+    x = colnames(to_be_plotted), y = rownames(breast_data_treatment_auc),
+    colors = colorRamp(c("red", "green")),
+    z = as.matrix(to_be_plotted), type = "heatmap"
+)  
+fig
+```
+
+```{r heatmap of selected data}
+breast_data_treatment_auc = data_treatment_auc[,na.omit(indexes)]
+to_be_plotted<-breast_data_treatment_auc[row_indexes,]
+rownames(to_be_plotted)<-NULL
+fig_by_row <- plot_ly(
+    x = colnames(to_be_plotted), y = rownames(breast_data_treatment_auc),
+    colors = colorRamp(c("red", "green")),
+    z = as.matrix(to_be_plotted), type = "heatmap"
+)  
+fig_by_row
+```
+
+```{r heatmap of selected data}
+to_be_plotted<-breast_data_treatment_auc[,col_indexes]
+rownames(to_be_plotted)<-NULL
+fig_by_col <- plot_ly(
+    x = colnames(to_be_plotted), y = rownames(breast_data_treatment_auc),
+    colors = colorRamp(c("red", "green")),
+    z = as.matrix(to_be_plotted), type = "heatmap"
+)  
+fig_by_col
+```
+
 Creazione dell'heatmap con i valori e controllare che non abbiano lo stesso comportamento i trattamenti eliminati/selezionati
 
-WEEK 2
+## WEEK 2
 
 1.  Selection of data to consider, removing the NA and filling with 0.5 (roberta's file)
 
