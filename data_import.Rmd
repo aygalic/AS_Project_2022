@@ -228,10 +228,10 @@ IQR(t(breast_data_treatment_auc[]), na.rm = TRUE)
 ```
 
 ```{r}
-heatmap(as.matrix(breast_data_treatment_auc, na.rm = TRUE))
+#heatmap(as.matrix(breast_data_treatment_auc, na.rm = TRUE))
 ```
 
-```{r}
+```{r eval=FALSE, include=FALSE}
 library(heatmaply)
 heatmaply_na(
   breast_data_treatment_auc[1:30, ],
@@ -240,23 +240,48 @@ heatmaply_na(
 ```
 
 ```{r}
+library(plotly)
+```
+
+```{r}
+fig <- plot_ly(
+    x = rownames(breast_data_treatment_auc), y = colnames(breast_data_treatment_auc),
+    z = as.matrix(breast_data_treatment_auc), type = "heatmap"
+)  
+fig
+```
+
+```{r}
 image(as.matrix(breast_data_treatment_auc))
 ```
 
 Creazione dell'heatmap con i valori e controllare che non abbiano lo stesso comportamento i trattamenti eliminati/selezionati
 
-0.5 for NAN![](data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACgAAAAaCAYAAADFTB7LAAAAcElEQVR4Xu3OwQmAQAxE0bClWYCW5N06tM6V2YPg5CjoF/JhLoHAi6iqn9eOefUbqrYvHY0cQDLyAlKRNyARmYA0ZMLRkAlGQyaU72tkAtlim7r/vJqDUDjlKBROOQyFU2icQuMUGqfQuBEaV1XPOwEx96nYACK8+wAAAABJRU5ErkJggg== "Run Current Chunk")
+WEEK 2
 
-[IC50 i consider the median and if it's above we normally put 0]
+1.  Selection of data to consider, removing the NA and filling with 0.5 (roberta's file)
 
-so for the ic50 we filll by 0
+    take 100-150 treatments (maybe less) --\> 143
 
-1.  Doing the heatmap
-2.  Select a
+    and maybe half of cells --\> 43
+
+    [IC50 i consider the median and if it's above we normally put 0, so for the ic50 we filll by 0]
+
+2.  Do an heatmap (of the selected data set and the other one with the removed values: check if there are some missing relationships)
+
 3.  PCA on 3 components (on normalized data/and not normalized data)
-4.  we plot the components in spaces and see if there are some clusters
-5.  Look at the dataset of expression (see same methods)
-6.  rmka pca will be totally black with some
+
+    then, we plot the components in spaces and see if there are some clusters
+
+4.  Look at the dataset of expression and do pca on that( same methodology of before)
+
+    rmka pca will be totally black with some red points if not normalized
+
+DIVION OF WORK (dataset based):
+
+a.  z-score Treatment: Roberta, Giulia
+
+b.  rmka: Aygalic, Nate, Luca
 
 We select the cell lines and we look at the expression, see variance with data and understand how to treat it.
 
