@@ -1,0 +1,108 @@
+---
+title: "Analysis of Expression Dataset"
+author: "Luca"
+date: '2022-03-28'
+output: html_document
+---
+
+
+# INFORMATION ON THE DATASET
+cancer_study_identifier: ccle_broad_2019
+genetic_alteration_type: MRNA_EXPRESSION
+datatype: Z-SCORE
+stable_id: rna_seq_mrna_median_Zscores
+profile_name: mRNA expression z-scores relative to diploid samples (RNA Seq RPKM)
+profile_description: mRNA z-Scores (RNA Seq RPKM) compared to the expression distribution of each gene tumors that are diploid for this gene.
+show_profile_in_analysis_tab: true
+data_filename: data_mrna_seq_rpkm_zscores_ref_diploid_samples.txt
+
+For mRNA and microRNA expression data, we typically compute the relative expression of an individual gene and tumor to the gene's expression distribution in a reference population. That reference population is either all tumors that are diploid for the gene in question, or, when available, normal adjacent tissue.
+
+A z-score for a sample indicates the number of standard deviations away from the mean of expression in the reference. The formula is:
+
+z = (expression in tumor sample - mean expression in reference sample) / standard deviation of expression in reference sample
+
+## IMPORT DATA
+
+```{r setup, include=FALSE}
+data_expression= read.delim(file.path("Dataset", "data_mrna_seq_rpkm_zscores_ref_diploid_samples.txt"), header = TRUE, comment.char = '#')
+
+```
+
+```{r}
+data_expression= read.delim(file.path("Dataset", "data_mrna_seq_rpkm.txt"), header = TRUE, comment.char = '#')
+
+```
+
+
+```{r}
+sum(duplicated(data_expression))
+```
+
+```{r}
+duplicated_values <- duplicated(data_expression)
+data_expression[duplicated_values,]
+```
+```{r include=FALSE}
+library(dplyr)
+```
+
+```{r}
+data_expression_clean <- distinct(data_expression, .keep_all=TRUE)
+```
+
+```{r}
+sum(duplicated(data_expression_clean))
+```
+
+Some 
+
+```{r}
+rownames(data_expression_clean)<-data_expression_clean$Hugo_Symbol
+data_expression_clean$Hugo_Symbol <- NULL
+```
+```{r}
+sum(duplicated(data_expression_clean$Hugo_Symbol))
+```
+
+```{r}
+data_expression_clean[duplicated(data_expression_clean$Hugo_Symbol),]
+```
+
+
+```{r}
+rownames(data_expression_clean)<-data_expression_clean$Hugo_Symbol
+data_expression_clean$Hugo_Symbol <- NULL
+```
+
+
+```{r}
+grouped_data <- data_expression_clean %>%
+  group_by(Hugo_Symbol)  %>%
+  slice(1, 2)
+```
+
+## THINGS TO DO 
+
+Selection of data to consider, removing the NA and filling with 0.5 (roberta's file)
+
+take 100-150 treatments (maybe less) –> 143
+
+and maybe half of cells –> 43
+
+[IC50 i consider the median and if it's above we normally put 0, so for the ic50 we filll by 0]
+
+Do an heatmap (of the selected data set and the other one with the removed values: check if there are some missing relationships)
+
+PCA on 3 components (on normalized data/and not normalized data)
+
+then, we plot the components in spaces and see if there are some clusters
+
+Look at the dataset of expression and do pca on that( same methodology of before)
+
+rmka pca will be totally black with some red points if not normalized
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
