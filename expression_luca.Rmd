@@ -25,15 +25,18 @@ z = (expression in tumor sample - mean expression in reference sample) / standar
 ## IMPORT DATA
 
 ```{r setup, include=FALSE}
-data_expression= read.delim(file.path("Dataset", "data_mrna_seq_rpkm_zscores_ref_diploid_samples.txt"), header = TRUE, comment.char = '#')
+#data_expression= read.delim(file.path("Dataset", "data_mrna_seq_rpkm_zscores_ref_diploid_samples.txt"), header = TRUE, comment.char = '#')
 
 ```
+
+Professor said to consider  data_mrna_seq_rpkm.txt
 
 ```{r}
 data_expression= read.delim(file.path("Dataset", "data_mrna_seq_rpkm.txt"), header = TRUE, comment.char = '#')
 
 ```
 
+## PROBLEM 1: DUPLICATES 
 
 ```{r}
 sum(duplicated(data_expression))
@@ -55,31 +58,61 @@ data_expression_clean <- distinct(data_expression, .keep_all=TRUE)
 sum(duplicated(data_expression_clean))
 ```
 
-Some 
+If i try to set rownames, i get an error:  
 
 ```{r}
 rownames(data_expression_clean)<-data_expression_clean$Hugo_Symbol
 data_expression_clean$Hugo_Symbol <- NULL
 ```
+I have multiple analysis for the same gene.
+
 ```{r}
 sum(duplicated(data_expression_clean$Hugo_Symbol))
 ```
 
 ```{r}
-data_expression_clean[duplicated(data_expression_clean$Hugo_Symbol),]
+repetitions <- data_expression_clean[duplicated(data_expression_clean$Hugo_Symbol),]
+```
+
+```{r}
+hist(table(repetitions$Hugo_Symbol))
+```
+
+After eliminating the identical rows (where every term is the same) we obtain 1678 problematic rows, i.e. having the same identifier (Hugo-symbol) for 206 genes. I note that the Y_RNA gene is repeated 681 times while the others are repeated a few times (about 1-4 repetitions).
+
+## PROBLEM 2: MISSING VALUES (0)
+
+The dataset seems to be complete, or rather, there are no Na values. However, I notice that there are many 0's, which makes me think that 0 has been used to indicate a missing value. 
+
+```{r}
+data_expression_clean[data_expression_clean == 0] <- NA
+```
+
+```{r}
+library(naniar)
 ```
 
 
 ```{r}
-rownames(data_expression_clean)<-data_expression_clean$Hugo_Symbol
-data_expression_clean$Hugo_Symbol <- NULL
+temp = data_expression_clean 
+miss_var_summary(temp) #by cell
+miss_case_summary(temp) #by gene
+miss_var_table(temp) #by cell ordinati da quanti mancano
+miss_case_table(temp) #By gene
+
+sum(is.na(temp))
+
+vis_miss(temp)
+gg_miss_var(temp) #by cell
+gg_miss_case(temp) #by drugs
 ```
 
 
+
 ```{r}
-grouped_data <- data_expression_clean %>%
-  group_by(Hugo_Symbol)  %>%
-  slice(1, 2)
+#Renaming rows
+#rownames(data_expression_clean)<-data_expression_clean$Hugo_Symbol
+#data_expression_clean$Hugo_Symbol <- NULL
 ```
 
 ## THINGS TO DO 
@@ -101,8 +134,4 @@ then, we plot the components in spaces and see if there are some clusters
 Look at the dataset of expression and do pca on that( same methodology of before)
 
 rmka pca will be totally black with some red points if not normalized
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
