@@ -117,17 +117,16 @@ gg_miss_case(temp) #by drugs
 
 ## THINGS TO DO 
 
-Selection of data to consider, removing the NA and filling with 0.5 (roberta's file)
+1. Selection of data to consider, removing the NA and filling them
 
-take 100-150 treatments (maybe less) –> 143
+How to fill them? (asked to professor) A mean value or the median might be fine, in this case I would first calculate the mean/median without considering NA to merge the duplicates and then think about the remaining NA.
+Another approach is to remove everything that is duplicated, but we have to evaluate which alternative to take depending on the numbers we have.
+Same for genes with NA.
 
-and maybe half of cells –> 43
 
-[IC50 i consider the median and if it's above we normally put 0, so for the ic50 we filll by 0]
+2. Do an heatmap (of the selected data set and the other one with the removed values: check if there are some missing relationships)
 
-Do an heatmap (of the selected data set and the other one with the removed values: check if there are some missing relationships)
-
-PCA on 3 components (on normalized data/and not normalized data)
+3. PCA on 3 components (on normalized data/and not normalized data)
 
 then, we plot the components in spaces and see if there are some clusters
 
