@@ -31,15 +31,30 @@ data_sample= read.delim(file.path("Dataset",'data_clinical_sample.txt'), header 
 
 ## Selecting Invasive Breast Carcinoma data
 
-Let's focus on Breast Cancer. First, we need to understand which studied cells of data_sample were taken by patients Invasive Breast Carcinoma patients.
+Let's focus on Breast Cancer. Under this category, we find Chondrosarcoma,Invasive Breast Carcinoma and Mixed Cancer. Let's consider "Invasive Breast Carcinoma patients".
 
-```{r}
+First, we need to understand which studied cells of data_sample were taken by Invasive Breast Carcinoma patients.
+
+```{r eval=FALSE, include=FALSE}
 selected_values =data_sample[data_sample$"CANCER_TYPE_DETAILED"=="Invasive Breast Carcinoma",]
 selected_cells = selected_values$SAMPLE_ID
 
 selected_cells = na.omit(selected_cells) #57 values
 #selected_cells = as.character(na.omit(selected_cells)) #57 values
 selected_cells
+```
+
+```{r}
+table(factor(data_sample$CANCER_TYPE_DETAILED))
+```
+
+```{r include=FALSE}
+#equivalently we could have done:
+
+library(dplyr)
+selected_cells <- filter(data_sample, CANCER_TYPE_DETAILED == 'Invasive Breast Carcinoma' )
+selected_cells <- selected_cells$SAMPLE_ID
+
 ```
 
 ![website_screenshot](dataset_explained.png) Apparently, some of this cells weren't studied in vitro: indeed these columns are not present in the data_treatment_auc dataset (you can see that in auc we have just 45)
@@ -62,7 +77,10 @@ indexes
 We found 45 data as said in the website.
 
 ```{r}
-sum(is.na(indexes))
+library(naniar)
+#sum(is.na(indexes))
+n_miss(indexes)
+prop_miss(indexes) #21% of patients' cell are not studied
 ```
 
 ```{r eval=FALSE, include=FALSE}
@@ -73,8 +91,361 @@ match(c(4,8),x)
 ```
 
 ```{r}
-cancer_data_treatment_auc = data_treatment_auc[, na.omit(indexes)]
-str(cancer_data_treatment_auc)
+breast_data_treatment_auc = data_treatment_auc[,na.omit(indexes)]
+#rownames(breast_data_treatment_auc,data_treatment_auc$ENTITY_STABLE_ID) #non va
+str(breast_data_treatment_auc)
+
+#
+library(stringr)
+old_names <- colnames(breast_data_treatment_auc)
+new_names <- str_remove(old_names, "_BREAST")
+
+library(data.table)
+setnames(breast_data_treatment_auc, old = old_names, new = new_names)
+head(breast_data_treatment_auc)
 ```
 
-TO BE DONE: REGRESSION AND PCA IN FILES OF THE FORMAT analysis_name_of_the_person
+I'm adding row names.
+
+```{r}
+breast_data_treatment_auc$ENTITY_STABLE_ID <- data_treatment_auc$ENTITY_STABLE_ID
+rownames(breast_data_treatment_auc)<-breast_data_treatment_auc$ENTITY_STABLE_ID
+breast_data_treatment_auc$ENTITY_STABLE_ID <- NULL
+breast_data_treatment_auc
+```
+
+```{r}
+breast_data_treatment_auc <- breast_data_treatment_auc[ , order(names(breast_data_treatment_auc))]
+```
+
+## ANALYSIS OF MISSING VALUES
+
+```{r}
+library(naniar)
+miss_var_summary(breast_data_treatment_auc)
+miss_case_summary(breast_data_treatment_auc)
+miss_var_table(breast_data_treatment_auc) #by cell
+miss_case_table(breast_data_treatment_auc) #By drug
+```
+
+take 100-150 treatments (maybe less)
+
+and maybe half of drugs
+
+```{r}
+#VISUALIZATION
+vis_miss(breast_data_treatment_auc)
+gg_miss_var(breast_data_treatment_auc) #by cell
+gg_miss_case(breast_data_treatment_auc) #by drugs
+
+```
+
+```{r}
+#check if there are strange missing values
+miss_scan_count(data = breast_data_treatment_auc, search = list("N/A", "missing", "na", " "))
+#not present
+```
+
+## Missing Data dependence
+
+```{r}
+vis_miss(breast_data_treatment_auc, cluster=TRUE)
+```
+
+# SHADOW MATRIX
+
+```{r}
+#shadow and nabular matrix
+bind_shadow(breast_data_treatment_auc)
+```
+
+```{r eval=FALSE, include=FALSE}
+library(corrplot)
+library(RColorBrewer)
+M <-cor(breast_data_treatment_auc)
+corrplot(M, type="upper", order="hclust",
+         )
+```
+
+## ANALYSIS OF OTHER CANCERS
+
+```{r}
+#equivalently we could have done:
+
+selected_cells <- filter(data_sample, CANCER_TYPE_DETAILED == 'Pancreatic Adenocarcinoma' )
+selected_cells <- selected_cells$SAMPLE_ID
+indexes = match(selected_cells, colnames(data_treatment_auc))
+temp = data_treatment_auc[,na.omit(indexes)]
+#rownames(breast_data_treatment_auc,data_treatment_auc$ENTITY_STABLE_ID) #non va
+str(temp)
+miss_var_summary(temp)
+miss_case_summary(temp)
+miss_var_table(temp) #by cell
+miss_case_table(temp) #By drug
+
+#VISUALIZATION
+vis_miss(temp)
+gg_miss_var(temp) #by cell
+gg_miss_case(temp) #by drugs
+vis_miss(temp, cluster= TRUE)
+```
+
+```{r}
+selected_cells <- filter(data_sample, CANCER_TYPE_DETAILED == 'Small Cell Lung Cancer' )
+selected_cells <- selected_cells$SAMPLE_ID
+indexes = match(selected_cells, colnames(data_treatment_auc))
+temp = data_treatment_auc[,na.omit(indexes)]
+#rownames(breast_data_treatment_auc,data_treatment_auc$ENTITY_STABLE_ID) #non va
+str(temp)
+miss_var_summary(temp)
+miss_case_summary(temp)
+miss_var_table(temp) #by cell
+miss_case_table(temp) #By drug
+
+#VISUALIZATION
+vis_miss(temp)
+gg_miss_var(temp) #by cell
+gg_miss_case(temp) #by drugs
+vis_miss(temp, cluster= TRUE)
+```
+
+```{r}
+selected_cells <- filter(data_sample, CANCER_TYPE_DETAILED == 'Colorectal Adenocarcinoma' )
+selected_cells <- selected_cells$SAMPLE_ID
+indexes = match(selected_cells, colnames(data_treatment_auc))
+temp = data_treatment_auc[,na.omit(indexes)]
+#rownames(breast_data_treatment_auc,data_treatment_auc$ENTITY_STABLE_ID) #non va
+str(temp)
+miss_var_summary(temp)
+miss_case_summary(temp)
+miss_var_table(temp) #by cell
+miss_case_table(temp) #By drug
+
+#VISUALIZATION
+vis_miss(temp)
+gg_miss_var(temp) #by cell
+gg_miss_case(temp) #by drugs
+vis_miss(temp, cluster= TRUE)
+```
+
+```{r}
+vis_miss(data_treatment_auc, show_perc = TRUE)
+```
+
+```{r}
+boxplot(x=t(breast_data_treatment_auc), col='gold')
+```
+
+```{r}
+IQR(t(breast_data_treatment_auc[]), na.rm = TRUE)
+```
+
+```{r eval=FALSE, include=FALSE}
+heatmap(as.matrix(breast_data_treatment_auc, na.rm = TRUE))
+```
+
+```{r eval=FALSE, include=FALSE}
+library(heatmaply)
+heatmaply_na(
+  breast_data_treatment_auc[1:30, ],
+  showticklabels = c(TRUE, FALSE)
+)
+```
+
+```{r include=FALSE}
+library(plotly)
+```
+
+```{r}
+to_be_plotted<-breast_data_treatment_auc
+rownames(to_be_plotted)<-NULL
+fig <- plot_ly(
+    x = colnames(to_be_plotted), y = rownames(breast_data_treatment_auc),
+    colors = colorRamp(c("red", "green")),
+    z = as.matrix(to_be_plotted), type = "heatmap"
+)  
+fig
+```
+
+```{r}
+image(as.matrix(breast_data_treatment_auc))
+```
+
+## SELECTION OF DATA (Roberta)
+
+```{r}
+col_names = names(breast_data_treatment_auc)
+perc_NA_col = colMeans(is.na(breast_data_treatment_auc))*100
+for(i in 1:45){
+  cat("For the cell line", col_names[i], "there is", perc_NA_col[i], "% of missing values \n")
+}
+```
+
+```{r}
+row_names = rownames(breast_data_treatment_auc)
+perc_NA_row = rowMeans(is.na(breast_data_treatment_auc))*100
+
+for(i in 1:266){
+  cat("For the drug", row_names[i], "there is", perc_NA_row[i], "% of missing values \n")
+}
+```
+
+```{r}
+#my version
+mean(perc_NA_row) 
+#it'a equal to mean(perc_NA_col) and it's 20.46 % 
+
+#I think we should start deleting rows since a drug that has been tested on few patients it's probably not worth to be studied 
+
+#After deleting the rows with most missing values, I see again how many missing values are there until I reach the threshold of 2%
+
+#I start with 50% tolerance on the rows
+max_perc_row = max(perc_NA_row)
+row_indexes <- c()
+while(max_perc_row > 50)
+{
+  index = match(max_perc_row, perc_NA_row)
+  row_indexes <- c(row_indexes, index)
+  breast_data_treatment_auc = breast_data_treatment_auc[-c(index),]
+  perc_NA_row = perc_NA_row[-c(index)]
+  max_perc_row = max(perc_NA_row)
+}
+```
+
+```{r}
+mean(perc_NA_row) 
+#it'a equal to mean(perc_NA_col) and it's 20.46 % 
+
+#I think we should start deleting rows since a drug that has been tested on few patients it's probably not worth to be studied 
+
+#After deleting the rows with most missing values, I see again how many missing values are there until I reach the threshold of 2%
+
+#I start with 50% tolerance on the rows
+max_perc_row = max(perc_NA_row)
+
+while(max_perc_row > 50)
+{
+  index = match(max_perc_row, perc_NA_row)
+  row_indexes <- c(row_indexes, index)
+  breast_data_treatment_auc = breast_data_treatment_auc[-c(index),]
+  perc_NA_row = perc_NA_row[-c(index)]
+  max_perc_row = max(perc_NA_row)
+}
+View(breast_data_treatment_auc) #from 266 we have now 224 rows
+```
+
+```{r}
+#update the percentages
+perc_NA_col = colMeans(is.na(breast_data_treatment_auc))*100
+#50% tolerance on the columns
+max_perc_col = max(perc_NA_col)
+col_indexes<-c()
+while(max_perc_col > 50)
+{
+  index = match(max_perc_col, perc_NA_col)
+  col_indexes <- c(col_indexes, index)
+  breast_data_treatment_auc = breast_data_treatment_auc[,-c(index)]
+  perc_NA_col = perc_NA_col[-c(index)]
+  max_perc_col = max(perc_NA_col)
+}
+View(breast_data_treatment_auc)
+#from 46 to 44 columns
+```
+
+```{r}
+#update the percentages for rows
+perc_NA_row = rowMeans(is.na(breast_data_treatment_auc))*100
+
+mean(perc_NA_row)
+mean(perc_NA_col)
+#it's around 8 % for both
+```
+
+```{r}
+#I think I should put more restrictions on the rows (treatments)
+
+#10% tolerance on the rows and I see if the mean percentage is 
+max_perc_row = max(perc_NA_row)
+while(max_perc_row > 10 && mean(perc_NA_row) > 2)
+{
+  index = match(max_perc_row, perc_NA_row)
+  row_indexes <- c(row_indexes, index)
+  breast_data_treatment_auc = breast_data_treatment_auc[-c(index),]
+  perc_NA_row = perc_NA_row[-c(index)]
+  max_perc_row = max(perc_NA_row)
+}
+View(breast_data_treatment_auc)
+#from 224 to 143 rows
+
+#update the percentages for columns
+perc_NA_col = colMeans(is.na(breast_data_treatment_auc))*100
+
+mean(perc_NA_row)
+mean(perc_NA_col)
+```
+
+```{r heatmap of selected data}
+to_be_plotted<-breast_data_treatment_auc
+rownames(to_be_plotted)<-NULL
+fig <- plot_ly(
+    x = colnames(to_be_plotted), y = rownames(breast_data_treatment_auc),
+    colors = colorRamp(c("red", "green")),
+    z = as.matrix(to_be_plotted), type = "heatmap"
+)  
+fig
+```
+
+```{r heatmap of selected data}
+breast_data_treatment_auc = data_treatment_auc[,na.omit(indexes)]
+to_be_plotted<-breast_data_treatment_auc[row_indexes,]
+rownames(to_be_plotted)<-NULL
+fig_by_row <- plot_ly(
+    x = colnames(to_be_plotted), y = rownames(breast_data_treatment_auc),
+    colors = colorRamp(c("red", "green")),
+    z = as.matrix(to_be_plotted), type = "heatmap"
+)  
+fig_by_row
+```
+
+```{r heatmap of selected data}
+to_be_plotted<-breast_data_treatment_auc[,col_indexes]
+rownames(to_be_plotted)<-NULL
+fig_by_col <- plot_ly(
+    x = colnames(to_be_plotted), y = rownames(breast_data_treatment_auc),
+    colors = colorRamp(c("red", "green")),
+    z = as.matrix(to_be_plotted), type = "heatmap"
+)  
+fig_by_col
+```
+
+Creazione dell'heatmap con i valori e controllare che non abbiano lo stesso comportamento i trattamenti eliminati/selezionati
+
+## WEEK 2
+
+1.  Selection of data to consider, removing the NA and filling with 0.5 (roberta's file)
+
+    take 100-150 treatments (maybe less) --\> 143
+
+    and maybe half of cells --\> 43
+
+    [IC50 i consider the median and if it's above we normally put 0, so for the ic50 we filll by 0]
+
+2.  Do an heatmap (of the selected data set and the other one with the removed values: check if there are some missing relationships)
+
+3.  PCA on 3 components (on normalized data/and not normalized data)
+
+    then, we plot the components in spaces and see if there are some clusters
+
+4.  Look at the dataset of expression and do pca on that( same methodology of before)
+
+    rmka pca will be totally black with some red points if not normalized
+
+DIVION OF WORK (dataset based):
+
+a.  z-score Treatment: Roberta, Giulia
+
+b.  rmka: Aygalic, Nate, Luca
+
+We select the cell lines and we look at the expression, see variance with data and understand how to treat it.
+
+PCA on the expression data set.
