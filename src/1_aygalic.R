@@ -3,6 +3,8 @@ library(plotly)  # interactive plots
 
 setwd("~/OneDrive/polimi/COURSES/S8/APPLIED_STATS/AS_Project_2022")
 
+# cluster AUC and consider them as "real cluster"
+# then cluster mRNA and try to find the same cluster (working on feature selection)
 
 #import data
 data_patient_= read.delim(file.path("Dataset", "data_clinical_patient.txt"), header = TRUE, comment.char = '#')
@@ -39,16 +41,28 @@ plot_heatmap <- function(cancer_name,
 
 
 
-cancer_types <- as.data.frame(table(data_sample$"CANCER_TYPE_DETAILED"), stringsAsFactors = FALSE)
+cancer_types <- as.data.frame(table(data_sample_$"CANCER_TYPE_DETAILED"), stringsAsFactors = FALSE)
 cancer_types <- cancer_types[order(cancer_types$Freq, decreasing = TRUE),]
 names(cancer_types)<-c("Factor", "Freq")
 
 plot_heatmap(cancer_name = "Invasive Breast Carcinoma")
 plot_heatmap(cancer_name = "Small Cell Lung Cancer")
 
+# prof says
+# if variance is 0 we should remove the line
+
+
+
 plot_heatmap(cancer_name = cancer_types$Factor[1])
 plot_heatmap(cancer_name = cancer_types$Factor[2])
 plot_heatmap(cancer_name = cancer_types$Factor[3])
 plot_heatmap(cancer_name = cancer_types$Factor[4])
 plot_heatmap(cancer_name = cancer_types$Factor[5])
+plot_heatmap(cancer_name = cancer_types$Factor[6])
+plot_heatmap(cancer_name = cancer_types$Factor[7]) 
+plot_heatmap(cancer_name = cancer_types$Factor[8])
+plot_heatmap(cancer_name = cancer_types$Factor[9])
+plot_heatmap(cancer_name = cancer_types$Factor[10])
+plot_heatmap(cancer_name = cancer_types$Factor[11])
+plot_heatmap(cancer_name = cancer_types$Factor[12])
 
