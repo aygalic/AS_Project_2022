@@ -110,7 +110,7 @@ fig <- plot_ly(data = data.frame(reduced_P), x = ~v1, y = ~v2, type = "scatter")
 fig
 
 
-# We want to do PCA on the treatments now
+# We want to do PCA on the genes
 t = t(big_boy_matrix)
 
 
@@ -143,5 +143,10 @@ fig <- plot_ly(data = data.frame(reduced_P), x = ~v1, y = ~v2, type = "scatter",
 
 fig
 
+# next thing to do :
+# try to do pca while hiding some of the classes from the data :
+# only plot breast & lung or any combinaison
 
-
+# try to remove the most expressed genes from the heatmap to see if it become readable
+#
+#

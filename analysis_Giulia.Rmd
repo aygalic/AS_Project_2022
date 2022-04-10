@@ -126,6 +126,23 @@ library(heatmaply)
 heatmaply(data.matrix(reduced_data_treatment)) # interactive heat map
 ```
 
+## HEATMAP 2
+```{r}
+# interactive ticks but no dendogram
+heatmaply(data.matrix(reduced_data_treatment),
+          dynamicTicks = TRUE, 
+          show_dendrogram=FALSE, 
+          margins = c(50,50,50,50)) 
+
+# no tickname
+heatmaply(data.matrix(reduced_data_treatment),
+          showticklabels = FALSE, 
+          margins = c(50,50,50,50)) 
+
+
+
+```
+
 
 
 ## PCA
