@@ -45,107 +45,136 @@ m1 <- Bmatrix_for_cancer_type(cancer_types$Factor[1])
 
 
 # creating a matrix will all cancer types
-big_boy_matrix = m1
+M = m1
 for(cancer_type in cancer_types$Factor[-length(cancer_types$Factor)]){
   print(cancer_type)
   m <- Bmatrix_for_cancer_type(cancer_type)
-  big_boy_matrix <- merge(big_boy_matrix,m, all = TRUE, sort = FALSE, by = "row.names")
-  row.names(big_boy_matrix) <- big_boy_matrix[,1]
-  big_boy_matrix <- big_boy_matrix[,-1]
+  M <- merge(M,m, all = TRUE, sort = FALSE, by = "row.names")
+  row.names(M) <- M[,1]
+  M <- M[,-1]
 }
 
 
-
-
-sum = as.data.frame(rowSums(big_boy_matrix))
+###########################
+###########################   Let's maybe not do that
+###########################
+sum = as.data.frame(rowSums(M))
 length(order(sum))
-dim(big_boy_matrix)
-big_boy_matrix[order(sum),]
+dim(M)
+M[order(sum),]
 #dev.off()
 plot.default(sum[order(sum),])
 #order
-#big_boy_matrix <- as.matrix(scale(big_boy_matrix[order(sum),]))
+#M <- as.matrix(scale(M[order(sum),]))
+###########################
+###########################
+###########################
+
+
+
+M <- as.matrix(scale(M))
 
 
 
 
-big_boy_matrix <- as.matrix(scale(big_boy_matrix))
 
-
-
-
-
-Y = rownames(big_boy_matrix)
-X = colnames(big_boy_matrix)
-fig <- plot_ly(x=X, y=Y, z = big_boy_matrix, type = "heatmap")
+Y = rownames(M)
+X = colnames(M)
+fig <- plot_ly(x=X, y=Y, z = M, type = "heatmap")
 fig
 
+# Dendrogram
 library(heatmaply)
-heatmaply(big_boy_matrix, k_col = length(cancer_types$Factor) -1)
+heatmaply(M, k_col = length(cancer_types$Factor) -1)
 
 
 #############################
 ############ PCA ############
 #############################
 
-# We want to do PCA on the cell lines first
-cov = cov(big_boy_matrix)
+# We reduce the space of cell line and project genes (to see if there are any gene of interet ?)
 
+# covariance matrix
+cov = cov(M)
+
+# eigen value decomposition
 decomp = eigen(cov)
 
+
+# ploting the first loadings
 barplot(decomp$values[1:10]/sum(decomp$values), ylim = c(0,1))
+
 
 # matrix with the first 2 eigen vect
 P = as.matrix(decomp$vectors[,1:2])
 # not sure how usefull is that
-barplot(P[1:50,1])
-reduced_P = big_boy_matrix%*%P
+reduced_M = data.frame(M%*%P)
 
 
 
-colnames(reduced_P) <- c("v1","v2")
-plot(reduced_P)
-fig <- plot_ly(data = data.frame(reduced_P), x = ~v1, y = ~v2, type = "scatter")
+colnames(reduced_M) <- c("v1","v2")
+rownames(reduced_M) <- rownames(M)
+plot(reduced_M)
+
+
+
+fig <- plot_ly(data = data.frame(reduced_M), x = ~v1, y = ~v2,
+               text = rownames(reduced_M), type = "scatter") %>% 
+               layout(margin = c(10,10,10,10,0))
+
 
 fig
 
-
-# We want to do PCA on the genes
-t = t(big_boy_matrix)
+# Double check that PCA is done correctly
 
 
 
-cov2 = cov(t)
+
+# We want to do PCA projecting the cell lines on a reduced gene space
+tM = t(M)
+
+
+
+cov2 = cov(tM)
 decomp2 = eigen(cov2)
 barplot(decomp2$values[1:50]/sum(decomp2$values), ylim = c(0,1))
 
 P2 = as.matrix(decomp2$vectors[,1:2])
 barplot(P2[1:50,1])
 
-reduced_P = t%*%P2
+reduced_M = tM%*%P2
 
 
 
-colnames(reduced_P) <- c("v1","v2")
-plot(reduced_P)
-fig <- plot_ly(data = data.frame(reduced_P), x = ~v1, y = ~v2, type = "scatter")
+colnames(reduced_M) <- c("v1","v2")
+plot(reduced_M)
+fig <- plot_ly(data = data.frame(reduced_M), x = ~v1, y = ~v2, type = "scatter")
 
 fig
 
 
-tag = rownames(reduced_P)
+tag = rownames(reduced_M)
 for(i in 1:(length(tag)-1)){
   tag[[i]] <- paste(strsplit(tag[[i]], "_")[[1]][-1],  collapse = " ")
 }
 tag
 
-fig <- plot_ly(data = data.frame(reduced_P), x = ~v1, y = ~v2, type = "scatter", color = tag)
+fig <- plot_ly(data = data.frame(reduced_M), x = ~v1, y = ~v2, type = "scatter", color = tag)
 
 fig
 
 # next thing to do :
 # try to do pca while hiding some of the classes from the data :
 # only plot breast & lung or any combinaison
+
+
+
+
+
+
+
+
+
 
 # try to remove the most expressed genes from the heatmap to see if it become readable
 #
