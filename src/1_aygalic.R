@@ -27,7 +27,7 @@ plot_heatmap <- function(cancer_name,
   
   #select values only
   data <- as.matrix(mrna_data[,-1])
-  
+  dim(data)
   if(std){data <- scale(data)}
   
   Y = mrna_data[,1]
