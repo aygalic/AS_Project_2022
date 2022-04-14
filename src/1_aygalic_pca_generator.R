@@ -7,7 +7,7 @@ setwd("~/OneDrive/polimi/COURSES/S8/APPLIED_STATS/AS_Project_2022")
 data_patient_= read.delim(file.path("Dataset", "data_clinical_patient.txt"), header = TRUE, comment.char = '#')
 data_sample_= read.delim(file.path("Dataset",'data_clinical_sample.txt'), header = TRUE, comment.char = '#')
 original_data_mrna_ = read.delim(file.path("Dataset", "data_mrna_seq_rpkm.txt"), header = TRUE, comment.char = '#', nrows=5000)
-original_data_mrna_ = read.delim(file.path("Dataset", "0_rpkm.txt"), header = TRUE, comment.char = '#', nrows=5000)
+original_data_mrna_ = read.delim(file.path("Dataset", "1_rpkm.txt"), header = TRUE, comment.char = '#', nrows=5000)
 
 # produce a matrix containing only the genes and cell lines associated with
 # a specified cancer type
@@ -122,13 +122,13 @@ create_reduced_mat <- function(mat, n_dim = 2){
   P_reduced = as.matrix(decomp$vectors[,1:n_dim])
   
   # Project the space
-  reduced_mat_scaled = data.frame(mat%*%P_reduced)
+  reduced_mat = data.frame(mat%*%P_reduced)
   
   # Make it coherent
-  colnames(reduced_mat_scaled) <- c("v1","v2")
-  rownames(reduced_mat_scaled) <- rownames(mat)
+  colnames(reduced_mat) <- c("v1","v2")
+  rownames(reduced_mat) <- rownames(mat)
   
-  return(reduced_mat_scaled)
+  return(reduced_mat)
 }
 
 
@@ -136,6 +136,7 @@ create_reduced_mat <- function(mat, n_dim = 2){
 # We reduce the space of cell line and project genes (to see if there are any gene of interest ?)
 
 reduced_M_scaled = create_reduced_mat(M_scaled, 2)
+
 
 plot_ly(data = data.frame(reduced_M_scaled), x = ~v1, y = ~v2,
                text = rownames(reduced_M_scaled), type = "scatter") %>% 
