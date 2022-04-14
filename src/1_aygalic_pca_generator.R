@@ -80,30 +80,8 @@ M_scaled <- as.matrix(scale(M))
 # plot heatmap
 plot_ly(x=colnames(M_scaled), y=rownames(M_scaled), z = M_scaled, type = "heatmap")
 
-# Dendrogram
-library(heatmaply)
-heatmaply(M_scaled, k_col = length(cancer_types$Factor) -1)
-
-# breaks the display a little, this is the fix :
-dev.off()
 
 
-
-# try to remove the most expressed genes from the heatmap to see if it become readable
-#
-#
-
-row.names.remove <- c("MTND2P28", "hsa-mir-6723")
-M_gene_deprived <- M[!(row.names(M) %in% row.names.remove), ]
-M_gene_deprived<-scale(M_gene_deprived)
-
-
-# heatmap it
-plot_ly(x=colnames(M_gene_deprived), y=rownames(M_gene_deprived),
-        z = M_gene_deprived, type = "heatmap")
-
-library(heatmaply)
-heatmaply(M_gene_deprived, k_col = 3)
 
 
 #############################
@@ -125,22 +103,59 @@ create_reduced_mat <- function(mat, n_dim = 2){
   reduced_mat = data.frame(mat%*%P_reduced)
   
   # Make it coherent
-  colnames(reduced_mat) <- c("v1","v2")
+  colnames(reduced_mat) <- paste("v", seq(1,n_dim), sep="")
   rownames(reduced_mat) <- rownames(mat)
   
   return(reduced_mat)
 }
 
 
-
 # We reduce the space of cell line and project genes (to see if there are any gene of interest ?)
 
 reduced_M_scaled = create_reduced_mat(M_scaled, 2)
 
-
 plot_ly(data = data.frame(reduced_M_scaled), x = ~v1, y = ~v2,
                text = rownames(reduced_M_scaled), type = "scatter") %>% 
                layout(margin = c(10,10,10,10,0))
+
+
+
+# adding color based on overall gene expression (before scaling)
+
+gene_exp = apply(M, 1, sum)
+
+plot_ly(data = data.frame(reduced_M_scaled), x = ~v1, y = ~v2,
+        text = rownames(reduced_M_scaled), type = "scatter",
+        color = gene_exp) %>% 
+  layout(margin = c(10,10,10,10,0))
+
+
+# same but log scaled ?
+
+gene_exp = apply(M, 1, sum)
+gene_exp_scaled = log(gene_exp)
+
+plot_ly(data = data.frame(reduced_M_scaled), x = ~v1, y = ~v2,
+        text = rownames(reduced_M_scaled), type = "scatter",
+        color = gene_exp_scaled) %>% 
+  layout(margin = c(10,10,10,10,0))
+
+
+
+# 3D plot 
+
+reduced_M_scaled = create_reduced_mat(M_scaled, 3)
+
+plot_ly(data = data.frame(reduced_M_scaled), x = ~v1, y = ~v2, z = ~v3,
+        text = rownames(reduced_M_scaled),
+        color = gene_exp_scaled) %>% 
+  layout(margin = c(10,10,10,10,0))
+
+
+
+
+
+
 
 
 
@@ -152,6 +167,7 @@ decomp2 = eigen(cov2)
 barplot(decomp2$values[1:50]/sum(decomp2$values), ylim = c(0,1))
 
 P2 = as.matrix(decomp2$vectors[,1:2])
+
 
 
 # We build M with only selected cancer types
