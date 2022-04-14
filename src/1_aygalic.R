@@ -3,50 +3,66 @@ library(plotly)  # interactive plots
 
 setwd("~/OneDrive/polimi/COURSES/S8/APPLIED_STATS/AS_Project_2022")
 
-
-##############################################
-######### Code stolen from Roberta : #########
-##############################################
+# cluster AUC and consider them as "real cluster"
+# then cluster mRNA and try to find the same cluster (working on feature selection)
 
 #import data
-data_patient= read.delim(file.path("Dataset", "data_clinical_patient.txt"), header = TRUE, comment.char = '#')
-
-data_sample= read.delim(file.path("Dataset",'data_clinical_sample.txt'), header = TRUE, comment.char = '#')
-
-original_data_mrna = read.delim(file.path("Dataset", "data_mrna_seq_rpkm.txt"), header = TRUE, comment.char = '#', nrows=100)
+data_patient_= read.delim(file.path("Dataset", "data_clinical_patient.txt"), header = TRUE, comment.char = '#')
+data_sample_= read.delim(file.path("Dataset",'data_clinical_sample.txt'), header = TRUE, comment.char = '#')
+original_data_mrna_ = read.delim(file.path("Dataset", "data_mrna_seq_rpkm.txt"), header = TRUE, comment.char = '#', nrows=100)
 
 
-#select cells from breast carcinoma patients
-selected_values = data_sample[data_sample$"CANCER_TYPE_DETAILED"=="Invasive Breast Carcinoma",]
-selected_cells = selected_values$SAMPLE_ID
-cat(length(selected_cells), "cells selected from cancer type Invasive Breast Carcinoma")
-selected_cells = na.omit(selected_cells)
-cat(length(selected_cells), "cells selected after omiting NAs")
+plot_heatmap <- function(cancer_name,
+                         data_patient = data_patient_,
+                         data_sample = data_sample_,
+                         original_data_mrna = original_data_mrna_,
+                         std=1){
+  
+  #select cells from breast carcinoma patients
+  selected_values = data_sample[data_sample$"CANCER_TYPE_DETAILED"==cancer_name,]
+  selected_cells = selected_values$SAMPLE_ID
+  selected_cells = na.omit(selected_cells)
+  indexes_mrna = match(selected_cells, colnames(original_data_mrna))
+  mrna_data = original_data_mrna[, c(1, na.omit(indexes_mrna)) ]
+  
+  #select values only
+  data <- as.matrix(mrna_data[,-1])
+  dim(data)
+  if(std){data <- scale(data)}
+  
+  Y = mrna_data[,1]
+  X = colnames(data)
+  
+  fig <- plot_ly(x = X, y = Y, z = data, type = "heatmap")%>%
+    layout(title = cancer_name)
+  fig
+}
 
-indexes_mrna = match(selected_cells, colnames(original_data_mrna))
-mrna_data = original_data_mrna[, c(1, na.omit(indexes_mrna)) ]
 
 
-###############################################
-############### Original Code : ###############
-###############################################
 
-cancer_data_mrna <- mrna_data[,-1]
-#standardization ???
-cancer_data_mrna_std <- scale(cancer_data_mrna)
+cancer_types <- as.data.frame(table(data_sample_$"CANCER_TYPE_DETAILED"), stringsAsFactors = FALSE)
+cancer_types <- cancer_types[order(cancer_types$Freq, decreasing = TRUE),]
+names(cancer_types)<-c("Factor", "Freq")
+
+plot_heatmap(cancer_name = "Invasive Breast Carcinoma")
+plot_heatmap(cancer_name = "Small Cell Lung Cancer")
+
+# prof says
+# if variance is 0 we should remove the line
 
 
-# The data I was actually supposed to plot :
-boxplot(cancer_data_mrna, use.cols = TRUE)
-boxplot(cancer_data_mrna_std, use.cols = TRUE)
 
-Y = mrna_data[,1]
-X = colnames(cancer_data_mrna)
+plot_heatmap(cancer_name = cancer_types$Factor[1])
+plot_heatmap(cancer_name = cancer_types$Factor[2])
+plot_heatmap(cancer_name = cancer_types$Factor[3])
+plot_heatmap(cancer_name = cancer_types$Factor[4])
+plot_heatmap(cancer_name = cancer_types$Factor[5])
+plot_heatmap(cancer_name = cancer_types$Factor[6])
+plot_heatmap(cancer_name = cancer_types$Factor[7]) 
+plot_heatmap(cancer_name = cancer_types$Factor[8])
+plot_heatmap(cancer_name = cancer_types$Factor[9])
+plot_heatmap(cancer_name = cancer_types$Factor[10])
+plot_heatmap(cancer_name = cancer_types$Factor[11])
+plot_heatmap(cancer_name = cancer_types$Factor[12])
 
-# with normalized data 
-fig_std_mrna <- plot_ly(x = X, y = Y, z = cancer_data_mrna_std, type = "heatmap")
-fig_std_mrna
-
-# with non normalized data 
-fig_mrna <- plot_ly(x = X, y = Y, z = as.matrix(cancer_data_mrna), type = "heatmap")
-fig_mrna
