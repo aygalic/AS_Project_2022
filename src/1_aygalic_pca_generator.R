@@ -6,7 +6,8 @@ setwd("~/OneDrive/polimi/COURSES/S8/APPLIED_STATS/AS_Project_2022")
 #import data
 data_patient_= read.delim(file.path("Dataset", "data_clinical_patient.txt"), header = TRUE, comment.char = '#')
 data_sample_= read.delim(file.path("Dataset",'data_clinical_sample.txt'), header = TRUE, comment.char = '#')
-original_data_mrna_ = read.delim(file.path("Dataset", "data_mrna_seq_rpkm.txt"), header = TRUE, comment.char = '#', nrows=100)
+original_data_mrna_ = read.delim(file.path("Dataset", "data_mrna_seq_rpkm.txt"), header = TRUE, comment.char = '#', nrows=5000)
+original_data_mrna_ = read.delim(file.path("Dataset", "0_rpkm.txt"), header = TRUE, comment.char = '#', nrows=5000)
 
 # produce a matrix containing only the genes and cell lines associated with
 # a specified cancer type
@@ -70,7 +71,9 @@ Build_matrix_for_multiple_cancer_types <- function(selection, types = cancer_typ
 #
 # We could also create a matrix with specified cancer types only
 cancer_type_selection <- c(1:(length(cancer_types$Factor)-1))
-M = Build_matrix_for_multiple_cancer_types(cancer_type_selection)$Mat
+M = Build_matrix_for_multiple_cancer_types(cancer_type_selection)
+tags = M$Tags
+M <- M$Mat
 M_scaled <- as.matrix(scale(M))
 
 
@@ -96,10 +99,11 @@ M_gene_deprived<-scale(M_gene_deprived)
 
 
 # heatmap it
-plot_ly(x=colnames(M_gene_deprived), y=rownames(M_gene_deprived), z = M_gene_deprived, type = "heatmap")
+plot_ly(x=colnames(M_gene_deprived), y=rownames(M_gene_deprived),
+        z = M_gene_deprived, type = "heatmap")
 
 library(heatmaply)
-heatmaply(M_gene_deprived, k_col = length(cancer_types$Factor) -1)
+heatmaply(M_gene_deprived, k_col = 3)
 
 
 #############################
