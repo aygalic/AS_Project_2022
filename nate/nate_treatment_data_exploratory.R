@@ -62,7 +62,7 @@ print(unique(str_util(colnames(sub_auc))))
 
 #----------------------------------------------------------------------------------------------
 
-#ORGANIZE THE MAIN DATASET INTO BLOCKS BASED ON CANCER TYPES 
+#ORGANIZES THE MAIN DATASET INTO BLOCKS BASED ON CANCER TYPES 
 
 block_dat <-function(cancer_types_, cancer_df){
   #first pass 
@@ -88,8 +88,83 @@ block_dat <-function(cancer_types_, cancer_df){
   return(to_return)
 }
 
-querried_names = c("BREAST", "BONE", "LIVER")
+#---------------------------------------------------------------------------------------------
+#MUTLICLASS CANCER CELL PCA, SAMPLES ARE DRUGS
+
+querried_names = c("BONE", "SKIN")
 sub_auc<- block_dat(querried_names, reduced_auc)
+dim_<-dim(sub_auc)
 
+na_fill = 0.5
+sub_auc[is.na(sub_auc)]= na_fill
+#sum(is.na(sub_auc))
+pc <- princomp(sub_auc,scores=T)
+#summary(pc)
 
+#IDEA: different drugs should perform optimally on different cell lines
+#Pca on auc as features might reveal clusters of drugs which perform similarly on the same cancer types
+#TODO: examine loadings, add color map based on argmax(mean(auc on celltype)) over celltypes
 
+#classify what 'kind' of drug we have
+drugs = data.frame(rowMeans(sub_auc[,grepl(querried_names[1], colnames(sub_auc))]))
+colnames(drugs)<-querried_names[1];
+
+for(c in querried_names[-1]){
+  averaged_col = data.frame(rowMeans(sub_auc[,grepl(c, colnames(sub_auc))]));
+  colnames(averaged_col)<-c;
+  drugs<-cbind(drugs,averaged_col);
+}
+
+#extract name of cell type - naive 
+#add an indeterminate class when distinction not clear (arbitrary threshold)
+#WILL THROW ERROR IF WE ONLY CONSIDER 1 CANCER CLASS
+
+which_cell<-function(data, thresh=0.05){
+  max_val1 = max(data);
+  data_copy = data[-(match(max_val1, data))]
+  max_val2 = max(data_copy)
+  
+  if((max_val1-max_val2)<thresh){
+    return("INDETERMINATE")
+  }
+  else{
+    return (colnames(data)[match(max_val1,data)])
+  }
+}
+
+drug_max = c(NULL)
+
+for(i in 1:dim_[1]){
+  drug_max<-cbind(drug_max,which_cell(drugs[i,], thresh=0.05))
+}
+drug_max<-t(data.frame(drug_max));
+colnames(drug_max)<-"DRUG_MAX"
+drugs<-cbind(drugs,drug_max)
+
+#get some colors in here 
+classes<-append(querried_names, "INDETERMINATE")
+col.cells <- rainbow(length(classes))
+col.labels <- rep(NA, dim_[1])
+
+for(i in 1:length(col.labels)){
+  col.labels[i] = col.cells[match(drugs[i,"DRUG_MAX"],classes)]
+}
+
+#PLOT
+x11()
+plot(pc$scores[,1], pc$scores[,2],pch=16, col=col.labels)
+
+#----------------------------------------------------------------------------------------------
+#MULTICLASS CANCER PCA, SAMPLES ARE CANCERS
+#ISSUE: NEED MORE DATA SO n>p
+querried_names = c("CENTRAL_NERVOUS_SYSTEM", "BREAST", "BONE", "LIVER", "PANCREAS", "STOMACH")
+sub_auc2<- block_dat(querried_names, reduced_auc)
+
+na_fill = 0.5
+sub_auc2[is.na(sub_auc2)]= na_fill
+sub_auc2<-t(sub_auc2);
+#sum(is.na(sub_auc))
+pc2 <- princomp(sub_auc2,scores=T)
+
+x11()
+plot(pc2$scores[,1], pc2$scores[,2],pch=16)
