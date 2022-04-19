@@ -17,7 +17,7 @@ name_pairs<-combn(querried_names,2)
 
 #----------------------------------------------------------------------------------------------
 na_fill = 0.5
-thresh = 0.05
+thresh = 0.01
 which_cell<-function(data, thresh=0.05){
   max_val1 = max(data);
   data_copy = data[-(match(max_val1, data))]
@@ -42,6 +42,10 @@ for(i in 1:dim(name_pairs)[2]){
   
   sub_auc[is.na(sub_auc)]= na_fill
   pc <- princomp(sub_auc,scores=T)
+  
+  #-------------------------------------------------------------
+  #STUPID, CAUSE EVERY ITER WE CONTRADICT OURSELVES
+  #this is only to generate plot colors 
   
   #classify what 'kind' of drug we have on a cancer-type basis 
   drugs<-data.frame(rowMeans(sub_auc[,grepl(pair[1], colnames(sub_auc))]))
@@ -69,6 +73,8 @@ for(i in 1:dim(name_pairs)[2]){
   for(i in 1:length(col.labels)){
     col.labels[i] = col.cells[match(drugs[i,"DRUG_MAX"],classes)]
   }
+  #-------------------------------------------------------------
+  
   #just for the plot 
   if(pair[1]=="CENTRAL_NERVOUS_SYSTEM"){
     title<-paste("CNS", "-", pair[2])
@@ -80,8 +86,11 @@ for(i in 1:dim(name_pairs)[2]){
     title<-paste(pair[1], "-", pair[2])
   }
   
-  plot(pc$scores[,1], pc$scores[,2],pch=16, col=col.labels, main=title, yaxt='n', xaxt='n', ylab = "", xlab="")
+  #omit colors right now; col=col.labels
+  plot(pc$scores[,1], pc$scores[,2],pch=16, col = "#c7c7c7", main=title, yaxt='n', xaxt='n', ylab = "", xlab="")
   #go 615x650 on dimension for plot save in R studio
 }
+
+#note: we can probably webscrape DrugBank to get a real label for the drug 
 
 

@@ -1,0 +1,5 @@
+- use drugbank api to assign either an appropriate label or "INDETERMINATE" to a drug
+- perform PCA on dataset with drug performances as samples
+- plot colors of the projected drug data which we know belong to a specific cancer type
+- cluster analysis/knn to assign which cancer a drug probably works best on
+- qantify that afterwards 
