@@ -6,7 +6,7 @@ source("./utils/exp_base_script.R")
 #----------------------------------------------------------------------------------------------
 #from the imports 
 cancer_types
-sort(table(cancer_freqs))
+sort(table(cancer_freqs), decreasing = TRUE)
 
 querried_names = c("BREAST", "LARGE_INTESTINE", "CENTRAL_NERVOUS_SYSTEM", "SKIN", "OVARY", "PANCREAS")
 #15 pairs 
@@ -16,8 +16,7 @@ name_pairs<-combn(querried_names,2)
 #MOTIVATION: loop through pairs and plot drug pca on one chart
 
 #----------------------------------------------------------------------------------------------
-na_fill = 0.5
-thresh = 0.01
+thresh = 0.04
 which_cell<-function(data, thresh=0.05){
   max_val1 = max(data);
   data_copy = data[-(match(max_val1, data))]
@@ -36,15 +35,24 @@ par(mfrow=c(5,3), mar=c(1,1,1,1))
 for(i in 1:dim(name_pairs)[2]){
   #get pair 
   pair<-c(name_pairs[1,i], name_pairs[2,i])
-  
+
   sub_auc<- block_dat(pair, auc)
   data_dim<-dim(sub_auc)
   
-  sub_auc[is.na(sub_auc)]= na_fill
+  #ALTERNATE 1 -> fill with const
+  #na_fill = 0.5
+  #sub_auc[is.na(sub_auc)]= na_fill
+  
+  #ALTERNATE 2 -> fill with column median
+  for(i in 1:data_dim[2]){
+    na_fill = median(sub_auc[!is.na(sub_auc[,i]), i])
+    sub_auc[is.na(sub_auc[,i]),i] = na_fill
+  }
+  
   pc <- princomp(sub_auc,scores=T)
   
   #-------------------------------------------------------------
-  #STUPID, CAUSE EVERY ITER WE CONTRADICT OURSELVES
+  #STUPID(?), CAUSE EVERY ITER WE CONTRADICT OURSELVES
   #this is only to generate plot colors 
   
   #classify what 'kind' of drug we have on a cancer-type basis 
@@ -87,10 +95,10 @@ for(i in 1:dim(name_pairs)[2]){
   }
   
   #omit colors right now; col=col.labels
-  plot(pc$scores[,1], pc$scores[,2],pch=16, col = "#c7c7c7", main=title, yaxt='n', xaxt='n', ylab = "", xlab="")
+  plot(pc$scores[,1], pc$scores[,2],pch=16, col=col.labels, main=title, yaxt='n', xaxt='n', ylab = "", xlab="")
+  
   #go 615x650 on dimension for plot save in R studio
 }
 
-#note: we can probably webscrape DrugBank to get a real label for the drug 
 
 
