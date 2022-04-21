@@ -13,3 +13,10 @@ https://www.altexsoft.com/blog/drug-data-openfda-dailymed-rxnorm-goodrx/
 Notes:
 - my assumption for classifying drugs isn't bad as the number of cancers included increases...
 - some drugs in the dataset aren't even in use anymore, e.g. read https://en.wikipedia.org/wiki/Linsitinib
+
+
+TODO:
+- go back into tki jupyter and cold-search names of drugs that aren't in tki to see if we can uncover another
+class of cancer treatment drug -> rinse and repeat.  Hopefully DrugBank has a similar page for those 
+- Look at the loadings for the pairwise PCAs and for 6 major cancers 
+- think about interpretation of not being able to do PCA once you have p too large 

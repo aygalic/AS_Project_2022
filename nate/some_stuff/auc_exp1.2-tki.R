@@ -3,16 +3,14 @@ source("./utils/nate_utils.R")
 source("./utils/exp_base_script.R")
 
 #now import custom tki_indicator from tki.ipynb
-path<-"/Users/nathanielnethercott/Desktop/School/Polimi/2021:2022/AS/AS_Project_2022/nate"
+path<-"/Users/nathanielnethercott/Desktop/School/Polimi/2021:2022/AS/AS_Project_2022/nate/some_stuff"
 tki<-read.delim(file.path(path, "tki_labels.txt"), header = FALSE, comment.char = '#')
 colnames(tki)<-"tki"
-
-#modify imported auc table 
-auc<-cbind(auc,tki)
 
 #same idea as auc_exp1.1 but we have a new coloring scheme!! 
 
 querried_names = c("BREAST", "LARGE_INTESTINE", "CENTRAL_NERVOUS_SYSTEM", "SKIN", "OVARY", "PANCREAS")
+querried_names = unique(str_util(colnames(auc)))
 
 #15 pairs 
 name_pairs<-combn(querried_names,2)
@@ -53,9 +51,9 @@ for(i in 1:dim(name_pairs)[2]){
     title<-paste(pair[1], "-", pair[2])
   }
   
-  col.labels<-rep('green',length(auc$tki))
-  for(i in 1:length(auc$tki)){
-    if(auc$tki[i] == 1){
+  col.labels<-rep('green',dim(tki)[1])
+  for(i in 1:dim(tki)[1]){
+    if(tki[i,] == 1){
       col.labels[i] = 'red'
     }
   }
