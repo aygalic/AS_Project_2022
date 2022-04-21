@@ -3,6 +3,7 @@ source("./utils/nate_utils.R")
 
 #pre-processing step/data import 
 source("./utils/exp_base_script.R")
+
 #----------------------------------------------------------------------------------------------
 #from the imports 
 cancer_types
@@ -14,7 +15,6 @@ name_pairs<-combn(querried_names,2)
 
 
 #MOTIVATION: loop through pairs and plot drug pca on one chart
-
 #----------------------------------------------------------------------------------------------
 thresh = 0.04
 which_cell<-function(data, thresh=0.05){

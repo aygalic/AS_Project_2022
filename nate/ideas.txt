@@ -7,8 +7,9 @@ Ideas:
 - qantify that afterwards 
 
 
-#some api's/databases for drugs
+#some APIs/databases for drugs
 https://www.altexsoft.com/blog/drug-data-openfda-dailymed-rxnorm-goodrx/ 
 
 Notes:
 - my assumption for classifying drugs isn't bad as the number of cancers included increases...
+- some drugs in the dataset aren't even in use anymore, e.g. read https://en.wikipedia.org/wiki/Linsitinib
