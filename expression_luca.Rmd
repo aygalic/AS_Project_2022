@@ -96,7 +96,88 @@ repetitions
 
 After eliminating the identical rows (where every term is the same) we obtain 1678 problematic rows, i.e. having the same identifier (Hugo-symbol) for 206 genes. I note that the Y_RNA gene is repeated 681 times while the others are repeated a few times (about 1-4 repetitions).
 
+## SELECT AND PREPROCESS OF BREAST CANCER DATA
+
+I am using Nate function to get the dataset:
+
+```{r import Nate's function'}
+source(file.path("nate", "utils", "nate_utils.R"))
+```
+
+```{r}
+path = "Dataset"
+#data import 
+data_sample = read.delim(file.path(path, "data_clinical_sample.txt"), header = TRUE, comment.char = '#')
+data_treatment_auc = read.delim(file.path(path, "data_drug_treatment_auc.txt"), header = TRUE, comment.char = '#')
+data_rpkm = read.delim(file.path(path, "data_mrna_seq_rpkm.txt"), header = TRUE, comment.char = '#')
+
+#--------------------------------------------------------------------------------------------
+#INTERSECTION OF DATASETS BASED ON PATIENT ID/PREPROCESSING  
+#THIS IS ONE POSSIBLE PATH 
+
+#get names of patient-ids for cross-comparison
+ids <-na.omit(data_patient$PATIENT_ID)
+ids
+
+#we should intersect all datasets we plan to use on the basis of patient sample-id
+
+#intersection, carry-forward 
+auc_ids <- match(ids, colnames(data_treatment_auc))
+auc_ids<-na.omit(auc_ids)
+reduced_auc_ids <-colnames(data_treatment_auc)[auc_ids]
+
+sample_ids <- match(reduced_auc_ids, data_sample$PATIENT_ID)
+sample_ids<-na.omit(sample_ids)
+reduced_sample_ids <-data_sample$PATIENT_ID[sample_ids]
+
+mrna_ids<-match(reduced_sample_ids, colnames(data_rpkm))
+mrna_ids<-na.omit(mrna_ids)
+reduced_mrna_ids <-colnames(data_rpkm)[mrna_ids]
+
+reduced_ids<-reduced_mrna_ids
+
+#REASSIGNMENT 
+auc <-data_treatment_auc[,c(reduced_ids)]
+rownames(auc)<-data_treatment_auc$ENTITY_STABLE_ID
+
+rpkm <-data_rpkm[,c(reduced_ids)]
+#rownames(rpkm)<-data_rpkm$Hugo_Symbol
+
+#----------------------------------------------------------------------------------------------
+
+#unique names from reduced 
+cancer_types = unique(str_util(reduced_ids))
+cancer_freqs <- factor(str_util(reduced_ids), levels=cancer_types)
+
+#cleaning 
+#rm(data_patient, data_sample, data_treatment_auc, path, reduced_auc_ids,reduced_mrna_ids, reduced_sample_ids)
+
+```
+
+```{r}
+#To access sub dataframe of specific cancers you just use the function block_dat
+#e.g.
+cancers<-c("BREAST")
+sub_rpkm <-block_dat(cancers, rpkm) #otteniamo 45 valori invece dei 53 disponibili (in auc non li abbiamo li altri)
+View(sub_rpkm)
+dim(sub_rpkm)
+
+```
+
+```{r}
+#SELECTION OF DATA Luca
+library(dplyr)
+selected_cells <- filter(data_sample, CANCER_TYPE_DETAILED == 'Invasive Breast Carcinoma' )
+selected_cells <- selected_cells$SAMPLE_ID
+indexes = match(selected_cells, colnames(data_expression))
+data_expression = data_expression[,na.omit(indexes)]
+```
+
+## PCA ON EXPRESSION
+
 ## PROBLEM 2: MISSING VALUES (0)
+
+**`The following code is based on wrong assumptions. Don't look at it`**
 
 The dataset seems to be complete, or rather, there are no Na values. However, I notice that there are many 0's, which makes me think that 0 has been used to indicate a missing value
 
@@ -133,8 +214,6 @@ gg_miss_case(temp) #by drugs
 ```
 
 ## SELECTION OF DATA (Luca)
-
-The following code is based on wrong assumptions. Don't look at it
 
 ```{r}
 data_expression_2 <- distinct(data_expression, .keep_all=TRUE)

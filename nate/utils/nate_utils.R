@@ -20,6 +20,15 @@ str_util <- function(str_arr){
 
 
 block_dat <-function(cancer_types_, cancer_df){
+  #' Select cancer cells of a specif type from a particular database
+  #' 
+  #' @param cancer_types_ cancer type
+  #' @param cancer_df  data frame
+  #' @return The \code{cancer_types_} sub-dataframe of \code{cancer_df}.
+  #' @examples
+  #' sub_rpkm <-block_dat(c("BREAST"), rpkm)
+  #' sub_rpkm <-block_dat(c("BREAST","URINARY_TRACT",), rpkm)
+  
   #first pass 
   type = cancer_types_[1]
   selected_cells = colnames(cancer_df)[grepl(type, colnames(cancer_df))]
