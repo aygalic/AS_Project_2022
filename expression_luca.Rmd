@@ -134,6 +134,8 @@ gg_miss_case(temp) #by drugs
 
 ## SELECTION OF DATA (Luca)
 
+The following code is based on wrong assumptions. Don't look at it
+
 ```{r}
 data_expression_2 <- distinct(data_expression, .keep_all=TRUE)
 data_expression_2[data_expression_2 == 0] <- NA
