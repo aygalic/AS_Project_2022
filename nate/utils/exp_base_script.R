@@ -37,7 +37,7 @@ auc <-data_treatment_auc[,c(reduced_ids)]
 rownames(auc)<-data_treatment_auc$ENTITY_STABLE_ID
 
 rpkm <-data_rpkm[,c(reduced_ids)]
-#rownames(rpkm)<-data_rpkm$Hugo_Symbol
+hugo<-data_rpkm$Hugo_Symbol
 
 #----------------------------------------------------------------------------------------------
 

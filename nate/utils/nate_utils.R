@@ -29,16 +29,19 @@ block_dat <-function(cancer_types_, cancer_df){
     colnames(sub_auc)<-selected_cells
   }
   
-  for(i in 2:length(cancer_types_)){
-    type = cancer_types_[i]
-    selected_cells = colnames(cancer_df)[grepl(type, colnames(cancer_df))]
-    cell_indices = match(selected_cells,colnames(cancer_df))
-    sub_auc<-data.frame(cancer_df[, cell_indices])
-    if(length(selected_cells)==1){
-      colnames(sub_auc)<-selected_cells
+  if(length(cancer_types_)>1){
+    for(i in 2:length(cancer_types_)){
+      type = cancer_types_[i]
+      selected_cells = colnames(cancer_df)[grepl(type, colnames(cancer_df))]
+      cell_indices = match(selected_cells,colnames(cancer_df))
+      sub_auc<-data.frame(cancer_df[, cell_indices])
+      if(length(selected_cells)==1){
+        colnames(sub_auc)<-selected_cells
+      }
+      to_return<-cbind(to_return, sub_auc)
     }
-    to_return<-cbind(to_return, sub_auc)
   }
+  
   return(to_return)
 }
 
