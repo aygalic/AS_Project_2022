@@ -40,13 +40,17 @@ reorder <- function(mat){
   return ( as.matrix(scale(mat[order(sum),])) )
 }
 
-# Get a table of all cancer types and occurence
+# Get a table of all cancer types and occurrences
 cancer_types <- as.data.frame(table(data_sample_$"CANCER_TYPE_DETAILED"), stringsAsFactors = FALSE)
 cancer_types <- cancer_types[order(cancer_types$Freq, decreasing = TRUE),]
 names(cancer_types)<-c("Factor", "Freq")
 
 
-
+# build matrix for selected cancer types
+# The selection of cancer type is done by INDEXES and not by names (1,4,10....)
+# Returns a list of the actual matrix and cancer name associated with each observation
+#   The matrix is built ordered by cancer type but this is useful to know exactly
+#   which cell lines can be grouped together
 Build_matrix_for_multiple_cancer_types <- function(selection, types = cancer_types){
   M_ <- NULL
   tag = c()
@@ -63,22 +67,16 @@ Build_matrix_for_multiple_cancer_types <- function(selection, types = cancer_typ
   return(list("Mat" = M_, "Tags" = tag))
 }
 
-###########################################
-############ Building Heatmaps ############ 
-###########################################
 
 # creating a matrix will all cancer types
 #
 # We could also create a matrix with specified cancer types only
+
 cancer_type_selection <- c(1:(length(cancer_types$Factor)-1))
 M = Build_matrix_for_multiple_cancer_types(cancer_type_selection)
 tags = M$Tags
 M <- M$Mat
 M_scaled <- as.matrix(scale(M))
-
-
-# plot heatmap
-plot_ly(x=colnames(M_scaled), y=rownames(M_scaled), z = M_scaled, type = "heatmap")
 
 
 
@@ -111,7 +109,6 @@ create_reduced_mat <- function(mat, n_dim = 2){
 
 
 # We reduce the space of cell line and project genes (to see if there are any gene of interest ?)
-
 reduced_M_scaled = create_reduced_mat(M_scaled, 2)
 
 plot_ly(data = data.frame(reduced_M_scaled), x = ~v1, y = ~v2,
@@ -142,8 +139,7 @@ plot_ly(data = data.frame(reduced_M_scaled), x = ~v1, y = ~v2,
 
 
 
-# 3D plot 
-
+# We try a 3D plot 
 reduced_M_scaled = create_reduced_mat(M_scaled, 3)
 
 plot_ly(data = data.frame(reduced_M_scaled), x = ~v1, y = ~v2, z = ~v3,
@@ -151,7 +147,8 @@ plot_ly(data = data.frame(reduced_M_scaled), x = ~v1, y = ~v2, z = ~v3,
         color = gene_exp_scaled) %>% 
   layout(margin = c(10,10,10,10,0))
 
-
+# it's pretty bad compared to the 2D plot which gives a way better diplay of  
+# the observations
 
 
 
@@ -208,14 +205,11 @@ project_cell_lines_for_cancer_type(c(7))
 project_cell_lines_for_cancer_type(c(11,19,15,7))
 project_cell_lines_for_cancer_type(c(13,15,7))
 
+project_cell_lines_for_cancer_type(c(8,9,7))
+project_cell_lines_for_cancer_type(c(11,10,7))
 
-# quick pca on gene deprived matrix
-reduced_M_dep = create_reduced_mat(M_gene_deprived, 2)
 
 
-plot_ly(data = data.frame(reduced_M_dep), x = ~v1, y = ~v2,
-               text = rownames(reduced_M_dep), type = "scatter") %>% 
-  layout(margin = c(10,10,10,10,0))
 
 
 

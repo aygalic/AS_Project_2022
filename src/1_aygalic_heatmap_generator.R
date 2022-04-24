@@ -34,7 +34,8 @@ Build_matrix_for_cancer_type <- function(cancer_name,
   return (data)
 }
 
-#   Reorder matrix by how much a gene is expressed
+# Reorder matrix by how much a gene is expressed
+# NOT USED IN THIS SCRIPT
 reorder <- function(mat){
   sum = as.data.frame(rowSums(mat))
   return ( as.matrix(scale(mat[order(sum),])) )
@@ -46,7 +47,9 @@ cancer_types <- cancer_types[order(cancer_types$Freq, decreasing = TRUE),]
 names(cancer_types)<-c("Factor", "Freq")
 
 
-
+# build matrix for selected cancer types
+# The selection of cancer type is done by INDEXES and not by names (1,4,10....)
+# Returns a list of the actual matrix and cancer name associated with each observation
 Build_matrix_for_multiple_cancer_types <- function(selection, types = cancer_types){
   M_ <- NULL
   tag = c()
