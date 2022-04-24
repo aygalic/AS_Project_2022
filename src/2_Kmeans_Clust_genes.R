@@ -16,19 +16,13 @@ data_sample_= read.delim(file.path("Dataset",'data_clinical_sample.txt'), header
 # use processed data
 original_data_mrna_ = read.delim(file.path("Dataset", "1_rpkm.txt"), header = TRUE, comment.char = '#', nrows=5000)
 
-
-
-
-
 # Get a table of all cancer types and occurrences
 cancer_types <- as.data.frame(table(data_sample_$"CANCER_TYPE_DETAILED"), stringsAsFactors = FALSE)
 cancer_types <- cancer_types[order(cancer_types$Freq, decreasing = TRUE),]
 names(cancer_types)<-c("Factor", "Freq")
 
 
-
-
-# creating a matrix will all cancer types
+# creating a matrix with all cancer types
 #
 # We could also create a matrix with specified cancer types only
 cancer_type_selection <- c(1:(length(cancer_types$Factor)-1))

@@ -14,7 +14,9 @@ source("src/utilities.R")
 data_patient_= read.delim(file.path("Dataset", "data_clinical_patient.txt"), header = TRUE, comment.char = '#')
 data_sample_= read.delim(file.path("Dataset",'data_clinical_sample.txt'), header = TRUE, comment.char = '#')
 # use processed data
-original_data_mrna_ = read.delim(file.path("Dataset", "1_rpkm.txt"), header = TRUE, comment.char = '#', nrows=5000)
+# original_data_mrna_ = read.delim(file.path("Dataset", "1_rpkm.txt"), header = TRUE, comment.char = '#', nrows=5000)
+# we might as well use all the data
+original_data_mrna_ = read.delim(file.path("Dataset", "1_rpkm.txt"), header = TRUE, comment.char = '#')
 
 
 
@@ -38,32 +40,28 @@ M <- M$Mat
 M_scaled <- as.matrix(scale(M))
 
 
-M.e <- dist(M, method='euclidean')
-M.m <- dist(M, method='manhattan')
-M.c <- dist(M, method='canberra')
 
-
-# actually, the data are never ordered according to (unknown) labels
-n=100
-misc <- sample(n)
-M_ <- M[misc,]
-
-# Bypass the sampling
 M_ <- M_scaled
 
 M_.e <- dist(M_, method='euclidean')
 M_.m <- dist(M_, method='manhattan')
 M_.c <- dist(M_, method='canberra')
 
-x11()
-image(1:n,1:n,as.matrix(M_.e), main='metrics: Euclidean', asp=1, xlab='i', ylab='j' )
-graphics.off()
 
 
 
+# making every possible tree
 M_.es <- hclust(M_.e, method='single')
 M_.ea <- hclust(M_.e, method='average')
 M_.ec <- hclust(M_.e, method='complete')
+
+M_.ms <- hclust(M_.m, method='single')
+M_.ma <- hclust(M_.m, method='average')
+M_.mc <- hclust(M_.m, method='complete')
+
+M_.cs <- hclust(M_.c, method='single')
+M_.ca <- hclust(M_.c, method='average')
+M_.cc <- hclust(M_.c, method='complete')
 
 
 
@@ -82,6 +80,8 @@ plot(M_.ec, main='euclidean-complete', hang=-0.1, xlab='', labels=F, cex=0.6, su
 plot(M_.ea, main='euclidean-average', hang=-0.1, xlab='', labels=F, cex=0.6, sub='')
 
 dev.off()
+
+
 
 
 
@@ -112,30 +112,31 @@ cluster.ec
 # create a projected space 
 reduced_M_scaled = create_reduced_mat(M_scaled, 2)
 
-cluster.ec <- cutree(M_.ec, k=3)
+# big brain graph
+k=3
+cluster.es <- cutree(M_.es, k=k)
+cluster.ea <- cutree(M_.ea, k=k)
+cluster.ec <- cutree(M_.ec, k=k)
 
-plot_ly(data = data.frame(reduced_M_scaled), x = ~v1, y = ~v2,
-        text = rownames(reduced_M_scaled), type = "scatter", 
-        color = cluster.ec) %>% 
-  layout(margin = c(10,10,10,10,0))
+cluster.ms <- cutree(M_.ms, k=k)
+cluster.ma <- cutree(M_.ma, k=k)
+cluster.mc <- cutree(M_.mc, k=k)
 
+cluster.cs <- cutree(M_.cs, k=k)
+cluster.ca <- cutree(M_.ca, k=k)
+cluster.cc <- cutree(M_.cc, k=k)
 
-
-
-
-# experimenting with the number of clusters
-cluster.ec <- cutree(M_.ec, k=3)
-plot_ly(data = data.frame(reduced_M_scaled), x = ~v1, y = ~v2,
-        text = rownames(reduced_M_scaled), type = "scatter", 
-        color = factor(cluster.ec)) %>% 
-  layout(margin = c(10,10,10,10,0))
-
-# experimenting with the number of clusters
-cluster.ec <- cutree(M_.ec, k=10)
-plot_ly(data = data.frame(reduced_M_scaled), x = ~v1, y = ~v2,
-        text = rownames(reduced_M_scaled), type = "scatter", 
-        color = factor(cluster.ec)) %>% 
-  layout(margin = c(10,10,10,10,0))
-
+x11()
+par(mfrow=c(3,3))
+plot(data.frame(reduced_M_scaled), main = 'euclidean single',   col=cluster.es, pch=16, asp=1)
+plot(data.frame(reduced_M_scaled), main = 'euclidean average',  col=cluster.ea, pch=16, asp=1)
+plot(data.frame(reduced_M_scaled), main = 'euclidean complete', col=cluster.ec, pch=16, asp=1)
+plot(data.frame(reduced_M_scaled), main = 'manhattan single',   col=cluster.ms, pch=16, asp=1)
+plot(data.frame(reduced_M_scaled), main = 'manhattan average',  col=cluster.ma, pch=16, asp=1)
+plot(data.frame(reduced_M_scaled), main = 'manhattan complete', col=cluster.mc, pch=16, asp=1)
+plot(data.frame(reduced_M_scaled), main = 'canberra single',    col=cluster.cs, pch=16, asp=1)
+plot(data.frame(reduced_M_scaled), main = 'canberra average',   col=cluster.ca, pch=16, asp=1)
+plot(data.frame(reduced_M_scaled), main = 'canberra complete',  col=cluster.cc, pch=16, asp=1)
+dev.off()
 
 
