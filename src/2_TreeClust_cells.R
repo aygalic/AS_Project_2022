@@ -43,6 +43,10 @@ M_scaled <- as.matrix(scale(M))
 
 M_ <- M_scaled
 
+# We want to cluster cells together so we use the transpose
+M_ <-t(M)
+
+
 M_.e <- dist(M_, method='euclidean')
 M_.m <- dist(M_, method='manhattan')
 M_.c <- dist(M_, method='canberra')
@@ -61,8 +65,6 @@ M_.mc <- hclust(M_.m, method='complete')
 M_.cs <- hclust(M_.c, method='single')
 M_.ca <- hclust(M_.c, method='average')
 M_.cc <- hclust(M_.c, method='complete')
-
-
 
 
 
@@ -127,10 +129,12 @@ elbow_plot_all_method
 
 # WHAT HAPPENS IF YOU PLOT THOSES ON THE REDUCED SPACE PROVIDED BY PCA ?
 # create a projected space 
-reduced_M_scaled = create_reduced_mat(M_scaled, 2)
+reduced_M_scaled = create_reduced_mat(M_, 2)
 
 # big brain graph
-k=2 # as the silhouette plots suggests
+
+# optimal number of cluster would be between 4-7
+k=7
 cluster.es <- cutree(M_.es, k=k)
 cluster.ea <- cutree(M_.ea, k=k)
 cluster.ec <- cutree(M_.ec, k=k)
