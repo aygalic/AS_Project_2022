@@ -41,3 +41,7 @@ vignettes/*.pdf
 # R Environment Variables
 .Renviron
 .DS_Store
+
+#nate 
+nate/plots/
+.DS_Store

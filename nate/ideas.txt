@@ -1,0 +1,21 @@
+Ideas:
+- plot colors of the projected drug data which we know belong to a specific cancer type
+- cluster analysis/knn to assign which cancer a drug probably works best on
+- qantify that afterwards 
+
+
+#some APIs/databases for drugs
+https://www.altexsoft.com/blog/drug-data-openfda-dailymed-rxnorm-goodrx/ 
+
+Notes:
+- my assumption for classifying drugs isn't bad as the number of cancers included increases...
+- some drugs in the dataset aren't even in use anymore, e.g. read https://en.wikipedia.org/wiki/Linsitinib
+
+
+TODO:
+- go back into tki jupyter and cold-search names of drugs that aren't in tki to see if we can uncover another
+class of cancer treatment drug -> rinse and repeat.  Hopefully DrugBank has a similar page for those 
+- Look at the loadings for the pairwise PCAs and for 6 major cancers 
+- think about interpretation of not being able to do PCA once you have p too large 
+- parse the descriptions for the drugs to see which cancers they're good at treating -> apply colours after 
+  - do this in python and export results here 

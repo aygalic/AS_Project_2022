@@ -11,12 +11,14 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## 1.IMPORT DATASET
 
-```{r cars}
+```{r data import}
+
 data_patient= read.delim(file.path("Dataset", "data_clinical_patient.txt"), header = TRUE, comment.char = '#')
 
 data_treatment_auc= read.delim(file.path("Dataset", 'data_drug_treatment_auc.txt'), header = TRUE, comment.char = '#')
 
 data_sample= read.delim(file.path("Dataset",'data_clinical_sample.txt'), header = TRUE, comment.char = '#')
+
 
 ```
 
@@ -112,33 +114,44 @@ perc_NA_col = colMeans(is.na(reduced_data_treatment))*100
 mean(perc_NA_row)
 mean(perc_NA_col)
 mean(is.na(reduced_data_treatment))*100
-
-# Substitute NA value with 0.5
-reduced_data_treatment[is.na(reduced_data_treatment)]= 0.5
-sum(is.na(reduced_data_treatment))
 ```
+```{r}
+# Substitute NA value with 0.5
+final_dataset = reduced_data_treatment
+final_dataset[is.na(reduced_data_treatment)]= 0.5
+sum(is.na(final_dataset))
+```
+
+```{r}
+colMeans(final_dataset, na.rm = TRUE)
+```
+
+
+```{r}
+x<-colMeans(final_dataset, na.rm = TRUE)-colMeans(reduced_data_treatment, na.rm = TRUE)
+hist(x*100, main="Influence of Na removing on the Cell Line AUC means",xlab = "Mean difference (%)")
+```
+
+```{r}
+y=rowMeans(final_dataset, na.rm = TRUE)-rowMeans(reduced_data_treatment, na.rm = TRUE)
+y
+hist(y*100, main="Influence of Na removing on the Treatment AUC means", xlab = "Mean difference (%)", probability = FALSE )
+```
+```{r}
+hist(rowMeans(final_dataset))
+final_dataset
+```
+```{r}
+sum(rowMeans(final_dataset, na.rm = TRUE)>0.94)
+reduced_data_treatment =final_dataset[rowMeans(final_dataset, na.rm = TRUE)>0.94,]
+reduced_data_treatment = t(reduced_data_treatment)
+```
+
 
 ## HEATMAP
 ```{r}
 library(heatmaply)
 heatmaply(data.matrix(reduced_data_treatment)) # interactive heat map
-```
-
-## HEATMAP 2
-```{r}
-# interactive ticks but no dendogram
-heatmaply(data.matrix(reduced_data_treatment),
-          dynamicTicks = TRUE, 
-          show_dendrogram=FALSE, 
-          margins = c(50,50,50,50)) 
-
-# no tickname
-heatmaply(data.matrix(reduced_data_treatment),
-          showticklabels = FALSE, 
-          margins = c(50,50,50,50)) 
-
-
-
 ```
 
 
@@ -184,10 +197,10 @@ axes3d()
 
 
 PC123 <- NULL
-for(i in 1:142)PC123 <- rbind(PC123, pc$loadings[,1]*pc$scores[i,1] + pc$loadings[,2]*pc$scores[i,2] + pc$loadings[,3]*pc$scores[i,3] + M)
+for(i in 1:43)PC123 <- rbind(PC123, pc$loadings[,1]*pc$scores[i,1] + pc$loadings[,2]*pc$scores[i,2] + pc$loadings[,3]*pc$scores[i,3] + M)
 points3d(PC123, col='red', size=6)
 
-for(i in 1:142)lines3d(rbind(reduced_data_treatment[i,], PC123[i,]),col='blue')
+for(i in 1:43)lines3d(rbind(reduced_data_treatment[i,], PC123[i,]),col='blue')
 
 lines3d(rbind(M + 2*pc$sdev[1] * pc$loadings[,1], M - 2*pc$sdev[1] * pc$loadings[,1]), col='forestgreen',lwd=2) 
 lines3d(rbind(M + 2*pc$sdev[2] * pc$loadings[,2], M - 2*pc$sdev[2] * pc$loadings[,2]), col='forestgreen',lwd=2) 
@@ -199,55 +212,7 @@ library(pca3d)
 pca3d(pc)
 ```
 
-```{r}
-for(i in 1:143){
-  if(gr[i]>0.8)
-    color[i]='red'
-  else 
-    color[i]='blue'
-}
-  
- 
-library(pca3d)
-pca3d(pc, col= color)
-```
-
-```{r}
-#Principal component bigger than 0 and mean of the treatment >0.8
-s= pc$scores
-true_good=0
-false_good=0
-true_bad=0
-false_bad=0
-for(i in 1:143){
-  if(s[i,1]<=1){
-    if(gr[i]>0.8)
-      true_good= true_good +1
-    else false_good= false_good+1
-  }
-  else{
-    if(gr[i]>0.8)
-      false_bad= false_bad +1
-    else true_bad= true_bad +1
-  }
-}
-
-for(i in 1:143){
-  if(s[i,2]>=-1){
-    if(gr[i]>0.8)
-      true_good= true_good +1
-    else false_good= false_goo---.d+1
-  }
-  else{
-    if(gr[i]>0.8)
-      false_bad= false_bad +1
-    else true_bad= true_bad +1
-  }
-}
-
-p= ((true_good+true_bad)/143)*100
-```
-
+It may be interesting if we find a way to make groups of cell line or treatment and after repeat this plot.
 
 # Transpose
 

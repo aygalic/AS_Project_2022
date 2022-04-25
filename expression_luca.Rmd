@@ -5,22 +5,37 @@ date: '2022-03-28'
 output: html_document
 ---
 
+## INFORMATION ON THE DATASET
 
-# INFORMATION ON THE DATASET
 cancer_study_identifier: ccle_broad_2019
+
 genetic_alteration_type: MRNA_EXPRESSION
-datatype: Z-SCORE
-stable_id: rna_seq_mrna_median_Zscores
+
+datatype: Z-SCORE stable_id: rna_seq_mrna_median_Zscores
+
 profile_name: mRNA expression z-scores relative to diploid samples (RNA Seq RPKM)
-profile_description: mRNA z-Scores (RNA Seq RPKM) compared to the expression distribution of each gene tumors that are diploid for this gene.
-show_profile_in_analysis_tab: true
+
+profile_description: mRNA z-Scores (RNA Seq RPKM) compared to the expression distribution of each gene tumors that are diploid for this gene. show_profile_in_analysis_tab: true
+
 data_filename: data_mrna_seq_rpkm_zscores_ref_diploid_samples.txt
 
-For mRNA and microRNA expression data, we typically compute the relative expression of an individual gene and tumor to the gene's expression distribution in a reference population. That reference population is either all tumors that are diploid for the gene in question, or, when available, normal adjacent tissue.
+### What are mRNA and microRNA Z-Scores?
+
+For mRNA and microRNA expression data, **we typically compute the relative expression of an individual gene in a tumor sample to the gene's expression distribution in a reference population of samples**. That reference population is all profiled samples (by default for mRNA), or normal samples (when specified), or all samples that are diploid for the gene in question (discontinued). The returned value indicates the **number of standard deviations away from the mean of expression in the reference population (Z-score)**.
+
+The normalization method is described [here](https://github.com/cBioPortal/cbioportal/blob/master/docs/Z-Score-normalization-script.md). Please note that the expression results by querying a gene with the default setting (z-score threshold of 2) oftentimes are not meaningful. Since the ***z-scores were usually calculated compared to other tumor samples***, ***high or low expression does not necessarily mean that the gene is expressed irregularly in tumors***. The data is useful for correlation analysis, for example, pick a threshold based on overall expression (using Plots tab) and compare survival data between expression high and low groups.
 
 A z-score for a sample indicates the number of standard deviations away from the mean of expression in the reference. The formula is:
 
 z = (expression in tumor sample - mean expression in reference sample) / standard deviation of expression in reference sample
+
+### Difference dataset
+
+cBioPortal currently generates two z-score profiles using two different base populations:
+
+-   Distribution based on **diploid** samples only: The expression distribution for unaltered copies of the gene is estimated by calculating the mean and variance of the expression values for samples in which the gene is diploid (i.e. value is "0" as reported by [discrete CNA data](https://github.com/cBioPortal/cbioportal/blob/master/docs/File-Formats.md#discrete-copy-number-data)). We call this the unaltered distribution. If the gene has no diploid samples, then its normalized expression is reported as NA.
+
+-   Distribution based on **all** samples: The expression distribution of the gene is estimated by calculating the mean and variance of all samples with expression values. If the gene has samples whose expression values are all zeros or non-numeric, then its normalized expression is reported as NA.
 
 ## IMPORT DATA
 
@@ -29,14 +44,14 @@ z = (expression in tumor sample - mean expression in reference sample) / standar
 
 ```
 
-Professor said to consider  data_mrna_seq_rpkm.txt
+Professor said to consider data_mrna_seq_rpkm.txt
 
 ```{r}
 data_expression= read.delim(file.path("Dataset", "data_mrna_seq_rpkm.txt"), header = TRUE, comment.char = '#')
 
 ```
 
-## PROBLEM 1: DUPLICATES 
+## PROBLEM 1: DUPLICATES
 
 ```{r}
 sum(duplicated(data_expression))
@@ -46,6 +61,7 @@ sum(duplicated(data_expression))
 duplicated_values <- duplicated(data_expression)
 data_expression[duplicated_values,]
 ```
+
 ```{r include=FALSE}
 library(dplyr)
 ```
@@ -58,16 +74,16 @@ data_expression_clean <- distinct(data_expression, .keep_all=TRUE)
 sum(duplicated(data_expression_clean))
 ```
 
-If i try to set rownames, i get an error:  
-
-```{r}
-rownames(data_expression_clean)<-data_expression_clean$Hugo_Symbol
-data_expression_clean$Hugo_Symbol <- NULL
-```
-I have multiple analysis for the same gene.
+The problem is that we have multiple analysis for the same gene.
 
 ```{r}
 sum(duplicated(data_expression_clean$Hugo_Symbol))
+
+```
+
+```{r}
+repetitions <- data_expression_clean[duplicated(data_expression_clean$Hugo_Symbol),]
+hist(table(repetitions$Hugo_Symbol))
 ```
 
 ```{r}
@@ -75,14 +91,99 @@ repetitions <- data_expression_clean[duplicated(data_expression_clean$Hugo_Symbo
 ```
 
 ```{r}
-hist(table(repetitions$Hugo_Symbol))
+repetitions
 ```
 
 After eliminating the identical rows (where every term is the same) we obtain 1678 problematic rows, i.e. having the same identifier (Hugo-symbol) for 206 genes. I note that the Y_RNA gene is repeated 681 times while the others are repeated a few times (about 1-4 repetitions).
 
+## SELECT AND PREPROCESS OF BREAST CANCER DATA
+
+I am using Nate function to get the dataset:
+
+```{r import Nate's function'}
+source(file.path("nate", "utils", "nate_utils.R"))
+```
+
+```{r}
+path = "Dataset"
+#data import 
+data_sample = read.delim(file.path(path, "data_clinical_sample.txt"), header = TRUE, comment.char = '#')
+data_treatment_auc = read.delim(file.path(path, "data_drug_treatment_auc.txt"), header = TRUE, comment.char = '#')
+data_rpkm = read.delim(file.path(path, "data_mrna_seq_rpkm.txt"), header = TRUE, comment.char = '#')
+
+#--------------------------------------------------------------------------------------------
+#INTERSECTION OF DATASETS BASED ON PATIENT ID/PREPROCESSING  
+#THIS IS ONE POSSIBLE PATH 
+
+#get names of patient-ids for cross-comparison
+ids <-na.omit(data_patient$PATIENT_ID)
+ids
+
+#we should intersect all datasets we plan to use on the basis of patient sample-id
+
+#intersection, carry-forward 
+auc_ids <- match(ids, colnames(data_treatment_auc))
+auc_ids<-na.omit(auc_ids)
+reduced_auc_ids <-colnames(data_treatment_auc)[auc_ids]
+
+sample_ids <- match(reduced_auc_ids, data_sample$PATIENT_ID)
+sample_ids<-na.omit(sample_ids)
+reduced_sample_ids <-data_sample$PATIENT_ID[sample_ids]
+
+mrna_ids<-match(reduced_sample_ids, colnames(data_rpkm))
+mrna_ids<-na.omit(mrna_ids)
+reduced_mrna_ids <-colnames(data_rpkm)[mrna_ids]
+
+reduced_ids<-reduced_mrna_ids
+
+#REASSIGNMENT 
+auc <-data_treatment_auc[,c(reduced_ids)]
+rownames(auc)<-data_treatment_auc$ENTITY_STABLE_ID
+
+rpkm <-data_rpkm[,c(reduced_ids)]
+#rownames(rpkm)<-data_rpkm$Hugo_Symbol
+
+#----------------------------------------------------------------------------------------------
+
+#unique names from reduced 
+cancer_types = unique(str_util(reduced_ids))
+cancer_freqs <- factor(str_util(reduced_ids), levels=cancer_types)
+
+#cleaning 
+#rm(data_patient, data_sample, data_treatment_auc, path, reduced_auc_ids,reduced_mrna_ids, reduced_sample_ids)
+
+```
+
+```{r}
+#To access sub dataframe of specific cancers you just use the function block_dat
+#e.g.
+cancers<-c("BREAST")
+sub_rpkm <-block_dat(cancers, rpkm) #otteniamo 45 valori invece dei 53 disponibili (in auc non li abbiamo li altri)
+View(sub_rpkm)
+dim(sub_rpkm)
+
+```
+
+```{r}
+#SELECTION OF DATA Luca
+library(dplyr)
+selected_cells <- filter(data_sample, CANCER_TYPE_DETAILED == 'Invasive Breast Carcinoma' )
+selected_cells <- selected_cells$SAMPLE_ID
+indexes = match(selected_cells, colnames(data_expression))
+data_expression = data_expression[,na.omit(indexes)]
+```
+
+## PCA ON EXPRESSION
+
 ## PROBLEM 2: MISSING VALUES (0)
 
-The dataset seems to be complete, or rather, there are no Na values. However, I notice that there are many 0's, which makes me think that 0 has been used to indicate a missing value. 
+**`The following code is based on wrong assumptions. Don't look at it`**
+
+The dataset seems to be complete, or rather, there are no Na values. However, I notice that there are many 0's, which makes me think that 0 has been used to indicate a missing value
+
+```{r}
+## if the variance is 0 on the line i remove it
+```
 
 ```{r}
 data_expression_clean[data_expression_clean == 0] <- NA
@@ -92,9 +193,8 @@ data_expression_clean[data_expression_clean == 0] <- NA
 library(naniar)
 ```
 
-
 ```{r}
-temp = data_expression_clean 
+temp = data_expression_clean
 miss_var_summary(temp) #by cell
 miss_case_summary(temp) #by gene
 miss_var_table(temp) #by cell ordinati da quanti mancano
@@ -107,26 +207,183 @@ gg_miss_var(temp) #by cell
 gg_miss_case(temp) #by drugs
 ```
 
-
-
 ```{r}
 #Renaming rows
 #rownames(data_expression_clean)<-data_expression_clean$Hugo_Symbol
 #data_expression_clean$Hugo_Symbol <- NULL
 ```
 
-## THINGS TO DO 
+## SELECTION OF DATA (Luca)
 
-1. Selection of data to consider, removing the NA and filling them
+```{r}
+data_expression_2 <- distinct(data_expression, .keep_all=TRUE)
+data_expression_2[data_expression_2 == 0] <- NA
+selection = rowMeans(is.na(data_expression_2)) < 0.7
+sum(colMeans(is.na(data_expression_2[selection,]))>0.5)
+sum(selection)
 
-How to fill them? (asked to professor) A mean value or the median might be fine, in this case I would first calculate the mean/median without considering NA to merge the duplicates and then think about the remaining NA.
-Another approach is to remove everything that is duplicated, but we have to evaluate which alternative to take depending on the numbers we have.
-Same for genes with NA.
+#27645: half of the dataset has 50% na values
+#19682: 35% has 10% values
+selection = rowMeans(is.na(data_expression_2)) < 0.02 #for 0.02 i have 15898 genes
+sum(selection)
+df = data_expression_2[selection,]
 
+```
 
-2. Do an heatmap (of the selected data set and the other one with the removed values: check if there are some missing relationships)
+```{r}
+rowVars(as.matrix(data_expression))>0.001
+```
 
-3. PCA on 3 components (on normalized data/and not normalized data)
+### VISUALIZATION OF NA
+
+```{r}
+library(naniar)
+temp = df
+miss_var_summary(temp) #by cell
+miss_case_summary(temp) #by gene
+miss_var_table(temp) #by cell ordinati da quanti mancano
+miss_case_table(temp) #By gene
+
+```
+
+```{r}
+repetitions <- temp[duplicated(data_expression_clean$Hugo_Symbol),]
+repetitions$Hugo_Symbol
+
+sum(duplicated(data_expression_clean$Hugo_Symbol))
+temp %>% filter(temp$Hugo_Symbol == "GOLGA4") 
+```
+
+## SELECTION OF DATA ( Roberta Version)
+
+```{r}
+col_names = names(data_expression_clean)
+row_names = data_expression_clean$Hugo_Symbol
+
+data_expression_clean[-1] <- NULL
+
+perc_NA_col = colMeans(is.na(data_expression_clean))*100
+perc_NA_row = rowMeans(is.na(data_expression_clean))*100
+
+```
+
+```{r}
+#my version
+mean(perc_NA_row) 
+#it'a equal to mean(perc_NA_col) and it's 20.46 % 
+
+#I think we should start deleting rows since a drug that has been tested on few patients it's probably not worth to be studied 
+
+#After deleting the rows with most missing values, I see again how many missing values are there until I reach the threshold of 2%
+
+#I start with 50% tolerance on the rows
+max_perc_row = max(perc_NA_row)
+row_indexes <- c()
+while(max_perc_row > 50)
+{
+  index = match(max_perc_row, perc_NA_row)
+  row_indexes <- c(row_indexes, index)
+  data_expression_clean = data_expression_clean[-c(index),]
+  perc_NA_row = perc_NA_row[-c(index)]
+  max_perc_row = max(perc_NA_row)
+}
+```
+
+```{r}
+mean(perc_NA_row) 
+#it'a equal to mean(perc_NA_col) and it's 20.46 % 
+
+#I think we should start deleting rows since a drug that has been tested on few patients it's probably not worth to be studied 
+
+#After deleting the rows with most missing values, I see again how many missing values are there until I reach the threshold of 2%
+
+#I start with 50% tolerance on the rows
+max_perc_row = max(perc_NA_row)
+
+while(max_perc_row > 50)
+{
+  index = match(max_perc_row, perc_NA_row)
+  row_indexes <- c(row_indexes, index)
+  data_expression_clean = data_expression_clean[-c(index),]
+  perc_NA_row = perc_NA_row[-c(index)]
+  max_perc_row = max(perc_NA_row)
+}
+#View(data_expression_clean) 
+```
+
+```{r}
+#update the percentages
+perc_NA_col = colMeans(is.na(data_expression_clean))*100
+#50% tolerance on the columns
+max_perc_col = max(perc_NA_col)
+col_indexes<-c()
+while(max_perc_col > 50)
+{
+  index = match(max_perc_col, perc_NA_col)
+  col_indexes <- c(col_indexes, index)
+  data_expression_clean = data_expression_clean[,-c(index)]
+  perc_NA_col = perc_NA_col[-c(index)]
+  max_perc_col = max(perc_NA_col)
+}
+#View(data_expression_clean)
+
+```
+
+```{r}
+#update the percentages for rows
+perc_NA_row = rowMeans(is.na(data_expression_clean))*100
+
+mean(perc_NA_row)
+mean(perc_NA_col)
+```
+
+```{r}
+#I think I should put more restrictions on the rows (treatments)
+
+#10% tolerance on the rows and I see if the mean percentage is 
+max_perc_row = max(perc_NA_row)
+while(max_perc_row > 10 && mean(perc_NA_row) > 2)
+{
+  index = match(max_perc_row, perc_NA_row)
+  row_indexes <- c(row_indexes, index)
+  data_expression_clean = data_expression_clean[-c(index),]
+  perc_NA_row = perc_NA_row[-c(index)]
+  max_perc_row = max(perc_NA_row)
+}
+#View(data_expression_clean)
+#from 224 to 143 rows
+
+#update the percentages for columns
+perc_NA_col = colMeans(is.na(data_expression_clean))*100
+
+mean(perc_NA_row)
+mean(perc_NA_col)
+```
+
+```{r}
+temp = data_expression_clean 
+miss_var_summary(temp) #by cell
+miss_case_summary(temp) #by gene
+miss_var_table(temp) #by cell ordinati da quanti mancano
+miss_case_table(temp) #By gene
+
+```
+
+## version 2
+
+```{r}
+rownames(temp)<-temp$Hugo_Symbol
+```
+
+## THINGS TO DO
+
+1.  Selection of data to consider, removing the NA and filling them
+
+How to fill them? (asked to professor) A mean value or the median might be fine, in this case I would first calculate the mean/median without considering NA to merge the duplicates and then think about the remaining NA. Another approach is to remove everything that is duplicated, but we have to evaluate which alternative to take depending on the numbers we have. Same for genes with NA.
+
+2.  Do an heatmap (of the selected data set and the other one with the removed values: check if there are some missing relationships)
+
+3.  PCA on 3 components (on normalized data/and not normalized data)
 
 then, we plot the components in spaces and see if there are some clusters
 
@@ -134,3 +391,6 @@ Look at the dataset of expression and do pca on that( same methodology of before
 
 rmka pca will be totally black with some red points if not normalized
 
+## WEEK 3
+
+plot representations of data on pca axis for auc and rmkn to see if there are the same clusters
