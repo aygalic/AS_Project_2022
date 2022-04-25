@@ -14,7 +14,7 @@ source("src/utilities.R")
 data_patient_= read.delim(file.path("Dataset", "data_clinical_patient.txt"), header = TRUE, comment.char = '#')
 data_sample_= read.delim(file.path("Dataset",'data_clinical_sample.txt'), header = TRUE, comment.char = '#')
 # use processed data
-# original_data_mrna_ = read.delim(file.path("Dataset", "1_rpkm.txt"), header = TRUE, comment.char = '#', nrows=5000)
+original_data_mrna_ = read.delim(file.path("Dataset", "1_rpkm.txt"), header = TRUE, comment.char = '#', nrows=5000)
 # we might as well use all the data
 original_data_mrna_ = read.delim(file.path("Dataset", "1_rpkm.txt"), header = TRUE, comment.char = '#')
 
@@ -49,7 +49,6 @@ M_.c <- dist(M_, method='canberra')
 
 
 
-
 # making every possible tree
 M_.es <- hclust(M_.e, method='single')
 M_.ea <- hclust(M_.e, method='average')
@@ -72,38 +71,65 @@ M_.ec$merge  # order of aggregation of statistical units / clusters
 M_.ec$height # distance at which we have aggregations
 M_.ec$order  # ordering that allows to avoid intersections in the dendrogram
 
-# plot of the dendrograms
-x11()
-par(mfrow=c(1,3))
-plot(M_.es, main='euclidean-single', hang=-0.1, xlab='', labels=F, cex=0.6, sub='')
-plot(M_.ec, main='euclidean-complete', hang=-0.1, xlab='', labels=F, cex=0.6, sub='')
-plot(M_.ea, main='euclidean-average', hang=-0.1, xlab='', labels=F, cex=0.6, sub='')
-
-dev.off()
 
 
 
 
 
-# plot dendrograms (2 clusters)
-x11()
-par(mfrow=c(1,3))
-plot(M_.es, main='euclidean-single', hang=-0.1, xlab='', labels=F, cex=0.6, sub='')
-rect.hclust(M_.es, k=2)
-plot(M_.ec, main='euclidean-complete', hang=-0.1, xlab='', labels=F, cex=0.6, sub='')
-rect.hclust(M_.ec, k=2)
-plot(M_.ea, main='euclidean-average', hang=-0.1, xlab='', labels=F, cex=0.6, sub='')
-rect.hclust(M_.ea, k=2)
-
-
-
-# How to cut a dendrogram?
 # We generate vectors of labels through the command cutree()
 help(cutree)
 
 # Fix k=2 clusters:
 cluster.ec <- cutree(M_.ec, k=2) # euclidean-complete:
 cluster.ec
+
+
+library(factoextra) # clustering visualization
+fviz_nbclust(M_.ec, FUN = cutree, method = "wss")
+
+library(ggpubr) # ggarrange
+
+# Making a silhouette plot with all metods
+p1 <- fviz_nbclust(M_, FUN = hcut, method = "silhouette", hc_method ="complete", hc_metric="euclidian")
+p2 <- fviz_nbclust(M_, FUN = hcut, method = "silhouette", hc_method ="complete", hc_metric="manhattan")
+p3 <- fviz_nbclust(M_, FUN = hcut, method = "silhouette", hc_method ="complete", hc_metric="canberra")
+
+p4 <- fviz_nbclust(M_, FUN = hcut, method = "silhouette", hc_method ="average", hc_metric="euclidian")
+p5 <- fviz_nbclust(M_, FUN = hcut, method = "silhouette", hc_method ="average", hc_metric="manhattan")
+p6 <- fviz_nbclust(M_, FUN = hcut, method = "silhouette", hc_method ="average", hc_metric="canberra")
+
+p7 <- fviz_nbclust(M_, FUN = hcut, method = "silhouette", hc_method ="single", hc_metric="euclidian")
+p8 <- fviz_nbclust(M_, FUN = hcut, method = "silhouette", hc_method ="single", hc_metric="manhattan")
+p9 <- fviz_nbclust(M_, FUN = hcut, method = "silhouette", hc_method ="single", hc_metric="canberra")
+
+silhouette_plot_all_method <- ggarrange(p1, p2, p3, p4, p5, p6, p7, p8 , p9,
+                                        ncol = 3, nrow = 3)
+x11()
+silhouette_plot_all_method
+
+
+# Making a ELBOW plot with all metods
+e1 <- fviz_nbclust(M_, FUN = hcut, method = "wss", hc_method ="complete", hc_metric="euclidian")
+e2 <- fviz_nbclust(M_, FUN = hcut, method = "wss", hc_method ="complete", hc_metric="manhattan")
+e3 <- fviz_nbclust(M_, FUN = hcut, method = "wss", hc_method ="complete", hc_metric="canberra")
+
+e4 <- fviz_nbclust(M_, FUN = hcut, method = "wss", hc_method ="average", hc_metric="euclidian")
+e5 <- fviz_nbclust(M_, FUN = hcut, method = "wss", hc_method ="average", hc_metric="manhattan")
+e6 <- fviz_nbclust(M_, FUN = hcut, method = "wss", hc_method ="average", hc_metric="canberra")
+
+e7 <- fviz_nbclust(M_, FUN = hcut, method = "wss", hc_method ="single", hc_metric="euclidian")
+e8 <- fviz_nbclust(M_, FUN = hcut, method = "wss", hc_method ="single", hc_metric="manhattan")
+e9 <- fviz_nbclust(M_, FUN = hcut, method = "wss", hc_method ="single", hc_metric="canberra")
+
+elbow_plot_all_method <- ggarrange(e1, e2, e3, e4, e5, e6, e7, e8 , e9,
+                                        ncol = 3, nrow = 3)
+x11()
+elbow_plot_all_method
+
+
+
+
+
 
 
 
@@ -113,7 +139,7 @@ cluster.ec
 reduced_M_scaled = create_reduced_mat(M_scaled, 2)
 
 # big brain graph
-k=3
+k=2 # as the silhouette plots suggests
 cluster.es <- cutree(M_.es, k=k)
 cluster.ea <- cutree(M_.ea, k=k)
 cluster.ec <- cutree(M_.ec, k=k)
