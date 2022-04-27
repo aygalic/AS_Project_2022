@@ -36,7 +36,7 @@ col_names = data_treatment_auc[1,]
 perc_NA_col = colMeans(is.na(data_treatment_auc))*100
 
 
-row_names = reduced_data_treatment[,1]
+row_names = data_treatment_auc[,1]
 perc_NA_row = rowMeans(is.na(data_treatment_auc))*100
 
 sum(perc_NA_row>50)
