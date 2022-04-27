@@ -108,21 +108,14 @@ mean(perc_NA_row)
 mean(perc_NA_col)
 #it's 1.98%
 
-heatmap(data.matrix(cancer_data_treatment_auc))
-
-image(data.matrix(cancer_data_treatment_auc))
-
-heatmaply(cancer_data_treatment)
-
-heatmaply(cancer_data_treatment, scale_fill_gradient_fun = ggplot2::scale_fill_gradient2(
-    low = "red", 
-    high = "green", 
-    midpoint = 0.5, 
-    limits = c(0, 1)
-  ))
-
-#I set as 0.5 the AUC value of the NA
+#I set as the mean of the treatment the value of the NA
 reduced_data_treatment = cancer_data_treatment_auc
+rows = rowMeans(reduced_data_treatment)
+for(i in 1:142){
+  reduced_data_treatment[i][is.na(reduced_data_treatment)] = rows[i]
+}
+#I set as 0.5 the AUC value of the NA
+
 reduced_data_treatment[is.na(reduced_data_treatment)]= 0.5
 
 pc <- princomp(reduced_data_treatment, scores = T)

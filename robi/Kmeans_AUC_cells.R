@@ -1,8 +1,10 @@
 library(ggplot2)
-library(plotly)  # interactive plots 
+library(plotly)  
 library(mvtnorm)
 library(rgl)
 library(car)
+library(factoextra)
+library(NbClust)
 
 
 #import data
@@ -143,9 +145,23 @@ result.k$tot.withinss # sum(sum of squares nei cluster)
 result.k$betweenss    # sum of squares between clusters
 result.k$size         # dimention of the clusters
 
+#plot on the first 2 treatments
 x11()
 plot(M, col = result.k$cluster+1)
 
+#plot on the first 3 treatments
 open3d()
 plot3d(M, size=3, col=result.k$cluster+1, aspect = F) 
 points3d(result.k$centers,size=10)
+
+# k = 4
+result.k4 <- kmeans(M, centers=4)
+x11()
+plot(M, col = result.k4$cluster+1)
+
+#find the best number of clusters
+fviz_nbclust(M, FUN = kmeans, method = "silhouette") 
+fviz_nbclust(M, FUN = kmeans, method = "wss")
+#3 minimum optimal number of clusters, up to 7 clusters maximum
+
+
