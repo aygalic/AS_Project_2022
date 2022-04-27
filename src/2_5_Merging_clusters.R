@@ -31,23 +31,24 @@ M2_ <- M2[indexes2,]
 dim(M2_)
 
 # Do k_means on original matrix and keep only the labels of interest
+k=3
 result.AUC <- kmeans(M1, centers=k)$cluster[indexes1]
 result.rpkm <- kmeans(M2, centers=k)$cluster[indexes2]
 
-restult <- table(result.AUC, result.rpkm)
+result <- table(result.AUC, result.rpkm)
 
 #make it correctly labbeled
-rownames(restult) <- paste(rownames(restult),"_AUC")
-colnames(restult) <- paste(rownames(restult),"_rpkm")
-restult
+rownames(result) <- paste(rownames(result),"AUC")
+colnames(result) <- paste(colnames(result),"rpkm")
+result
 
 #WHAT IS THE AMOUNT OF CORRECT LABELING ?
-result.max <- apply(restult, 1, max)
-result.sum <- apply(restult, 1, sum)
+result.max <- apply(result, 1, max)
+result.sum <- apply(result, 1, sum)
 perf <- 100*result.max/result.sum
 perf
 
-cbind(restult, perf)
+cbind(result, perf)
 
 average_perf <- mean(perf)
 average_perf
@@ -62,8 +63,9 @@ average_perf
 
 
 
+
 # now make a cool function out of that
-contingency_table_avg_perf <- function(k = 2, fun = kmeans, 
+contingency_table <- function(k = 2, fun = kmeans, 
                                      # param for htrees KEEP THEM NULL IF YOU USE KMEANS
                                      hc_method = NULL, hc_metric = NULL) 
   {
@@ -80,24 +82,29 @@ contingency_table_avg_perf <- function(k = 2, fun = kmeans,
     result.AUC <- fun(M1, k, hc_method = hc_method, hc_metric= hc_metric)$cluster[indexes1]
     result.rpkm <- fun(M2, k, hc_method = hc_method, hc_metric= hc_metric)$cluster[indexes2]
   }
-  restult <- table(result.AUC, result.rpkm)
+  result <- table(result.AUC, result.rpkm)
   
   #WHAT IS THE AMOUNT OF CORRECT LABELING ?
-  result.max <- apply(restult, 1, max)
-  result.sum <- apply(restult, 1, sum)
+  result.max <- apply(result, 1, max)
+  result.sum <- apply(result, 1, sum)
 
-  return(mean(100*result.max/result.sum))
+
+  perf <- 100*result.max/result.sum
+  
+  return(list(result = result, perf = perf, avg_perf=mean(perf)))
 }
 
 avg_perfs_kmeans <- c()
 for(i in 1:10){
-  avg_perfs_kmeans <- c(avg_perfs_kmeans, contingency_table_avg_perf(i, kmeans))
+  avg_perfs_kmeans <- c(avg_perfs_kmeans, contingency_table(i, kmeans)$avg_perf)
 }
 plot(avg_perfs_kmeans)
 
 
 # this is a plot of how similar are the classifications between both datasets 
 # depending on the number of cluster
+avg_perfs_kmeans <- c()
+
 avg_perfs_ce <- c()
 avg_perfs_ae <- c()
 avg_perfs_se <- c()
@@ -110,21 +117,23 @@ avg_perfs_cc <- c()
 avg_perfs_ac <- c()
 avg_perfs_sc <- c()
 
-j=10
-for(i in 1:j){avg_perfs_ce <- c(avg_perfs_ce, contingency_table_avg_perf(i, hcut, hc_method = "complete", hc_metric ="euclidian"))}
-for(i in 1:j){avg_perfs_ae <- c(avg_perfs_ae, contingency_table_avg_perf(i, hcut, hc_method = "average", hc_metric ="euclidian"))}
-for(i in 1:j){avg_perfs_se <- c(avg_perfs_se, contingency_table_avg_perf(i, hcut, hc_method = "single", hc_metric ="euclidian"))}
+j=30
+for(i in 1:j){avg_perfs_kmeans <- c(avg_perfs_kmeans, contingency_table(i, kmeans)$avg_perf)}
 
-for(i in 1:j){avg_perfs_cm <- c(avg_perfs_cm, contingency_table_avg_perf(i, hcut, hc_method = "complete", hc_metric ="manhattan"))}
-for(i in 1:j){avg_perfs_am <- c(avg_perfs_am, contingency_table_avg_perf(i, hcut, hc_method = "average", hc_metric ="manhattan"))}
-for(i in 1:j){avg_perfs_sm <- c(avg_perfs_sm, contingency_table_avg_perf(i, hcut, hc_method = "single", hc_metric ="manhattan"))}
+for(i in 1:j){avg_perfs_ce <- c(avg_perfs_ce, contingency_table(i, hcut, hc_method = "complete", hc_metric ="euclidian")$avg_perf)}
+for(i in 1:j){avg_perfs_ae <- c(avg_perfs_ae, contingency_table(i, hcut, hc_method = "average", hc_metric ="euclidian")$avg_perf)}
+for(i in 1:j){avg_perfs_se <- c(avg_perfs_se, contingency_table(i, hcut, hc_method = "single", hc_metric ="euclidian")$avg_perf)}
 
-for(i in 1:j){avg_perfs_cc <- c(avg_perfs_cc, contingency_table_avg_perf(i, hcut, hc_method = "complete", hc_metric ="canberra"))}
-for(i in 1:j){avg_perfs_ac <- c(avg_perfs_ac, contingency_table_avg_perf(i, hcut, hc_method = "average", hc_metric ="canberra"))}
-for(i in 1:j){avg_perfs_sc <- c(avg_perfs_sc, contingency_table_avg_perf(i, hcut, hc_method = "single", hc_metric ="canberra"))}
+for(i in 1:j){avg_perfs_cm <- c(avg_perfs_cm, contingency_table(i, hcut, hc_method = "complete", hc_metric ="manhattan")$avg_perf)}
+for(i in 1:j){avg_perfs_am <- c(avg_perfs_am, contingency_table(i, hcut, hc_method = "average", hc_metric ="manhattan")$avg_perf)}
+for(i in 1:j){avg_perfs_sm <- c(avg_perfs_sm, contingency_table(i, hcut, hc_method = "single", hc_metric ="manhattan")$avg_perf)}
+
+for(i in 1:j){avg_perfs_cc <- c(avg_perfs_cc, contingency_table(i, hcut, hc_method = "complete", hc_metric ="canberra")$avg_perf)}
+for(i in 1:j){avg_perfs_ac <- c(avg_perfs_ac, contingency_table(i, hcut, hc_method = "average", hc_metric ="canberra")$avg_perf)}
+for(i in 1:j){avg_perfs_sc <- c(avg_perfs_sc, contingency_table(i, hcut, hc_method = "single", hc_metric ="canberra")$avg_perf)}
 
 
-plot(avg_perfs_kmeans,type="l",col="black", ylim=c(0,100), 
+plot(avg_perfs_kmeans,type="l",col="black", ylim=c(0,100), xlim = c(0,j) ,
      ylab = "AVG similar matching",
      xlab = "Number of clusters")
 
