@@ -1,23 +1,16 @@
-library(ggplot2)
-library(plotly)  # interactive plots 
-library(mvtnorm)
-library(rgl)
-library(car)
-library(dplyr)
-
-
 setwd("~/OneDrive/polimi/COURSES/S8/APPLIED_STATS/AS_Project_2022")
+
+source("src/utilities.R")
 
 
 # steal Robi's work
-source("robi/Kmeans_AUC_cells.R")
-M1 <- M
+M_AUC <- create_AUC_matrix()
+M1<- as.matrix(scale(M_AUC))
 
 # merge with mine
-source("src/2_Kmeans_Clust_cells.R")
-M2 <- M 
-
-dev.off()
+M <- Build_matrix_for_multiple_cancer_types()$Mat
+M_scaled <- as.matrix(scale(M))
+M2 <- t(M_scaled)
 
 
 # select row from M1 that are present in M2
@@ -117,7 +110,7 @@ avg_perfs_cc <- c()
 avg_perfs_ac <- c()
 avg_perfs_sc <- c()
 
-j=30
+j=40
 for(i in 1:j){avg_perfs_kmeans <- c(avg_perfs_kmeans, contingency_table(i, kmeans)$avg_perf)}
 
 for(i in 1:j){avg_perfs_ce <- c(avg_perfs_ce, contingency_table(i, hcut, hc_method = "complete", hc_metric ="euclidian")$avg_perf)}
@@ -133,32 +126,27 @@ for(i in 1:j){avg_perfs_ac <- c(avg_perfs_ac, contingency_table(i, hcut, hc_meth
 for(i in 1:j){avg_perfs_sc <- c(avg_perfs_sc, contingency_table(i, hcut, hc_method = "single", hc_metric ="canberra")$avg_perf)}
 
 
-plot(avg_perfs_kmeans,type="l",col="black", ylim=c(0,100), xlim = c(0,j) ,
-     ylab = "AVG similar matching",
-     xlab = "Number of clusters")
-
-lines(avg_perfs_ce,col="indianred")
-lines(avg_perfs_ae,col="indianred1")
-lines(avg_perfs_se,col="indianred4")
-
-lines(avg_perfs_cm,col="gold")
-lines(avg_perfs_am,col="gold3")
-lines(avg_perfs_sm,col="gold4")
-
-lines(avg_perfs_cc,col="aquamarine")
-lines(avg_perfs_ac,col="aquamarine3")
-lines(avg_perfs_sc,col="aquamarine4")
 
 
-legend("bottomleft", 95, 
-       legend=c("kmeans",
-                       "complete euclidian", "average euclidian", "single euclidian",
-                       "complete manhattan", "average manhattan", "single manhattan",
-                       "complete canberra", "average canberra", "single canberra"),
-       col=c("black",
-             "indianred", "indianred1","indianred4",
-             "gold", "gold3", "gold4",
-             "aquamarine", "aquamarine3", "aquamarine4"),
-       lty=1:2, cex=0.8)
-  
+n_clusters <- c(1:j)
+
+data <- data.frame(n_clusters, avg_perfs_kmeans,
+                   avg_perfs_ce, avg_perfs_ae, avg_perfs_se,
+                   avg_perfs_cm, avg_perfs_am, avg_perfs_sm,
+                   avg_perfs_cc, avg_perfs_ac, avg_perfs_sc)
+
+
+fig <- plot_ly(data, x = ~x, y = ~avg_perfs_kmeans, name = 'kmeans', type = 'scatter', mode = 'lines+markers') 
+fig <- fig %>% add_trace(y = ~avg_perfs_ce, name = 'complete euclidian', mode = 'lines+markers') 
+fig <- fig %>% add_trace(y = ~avg_perfs_ae, name = 'average euclidian', mode = 'lines+markers') 
+fig <- fig %>% add_trace(y = ~avg_perfs_se, name = 'single euclidian', mode = 'lines+markers') 
+
+fig <- fig %>% add_trace(y = ~avg_perfs_cm, name = 'complete manhattan', mode = 'lines+markers') 
+fig <- fig %>% add_trace(y = ~avg_perfs_am, name = 'average manhattan', mode = 'lines+markers') 
+fig <- fig %>% add_trace(y = ~avg_perfs_sm, name = 'single manhattan', mode = 'lines+markers') 
+
+fig <- fig %>% add_trace(y = ~avg_perfs_cc, name = 'complete canberra"', mode = 'lines+markers') 
+fig <- fig %>% add_trace(y = ~avg_perfs_ac, name = 'average canberra', mode = 'lines+markers') 
+fig <- fig %>% add_trace(y = ~avg_perfs_sc, name = 'single canberra', mode = 'lines+markers') 
+fig
 

@@ -1,8 +1,4 @@
-library(ggplot2)
-library(plotly)  # interactive plots 
-library(mvtnorm)
-library(rgl)
-library(car)
+
 
 setwd("~/OneDrive/polimi/COURSES/S8/APPLIED_STATS/AS_Project_2022")
 # all the useful functions for pca and projections
@@ -67,7 +63,7 @@ plot_ly(data = data.frame(reduced_M_scaled), x = ~v1, y = ~v2,
   layout(margin = c(10,10,10,10,0))
 
 # experimenting with the number of clusters
-result.k <- kmeans(M, centers=5) # Centers: fixed number of clusters
+result.k <- kmeans(M, centers=3) # Centers: fixed number of clusters
 plot_ly(data = data.frame(reduced_M_scaled), x = ~v1, y = ~v2,
         text = rownames(reduced_M_scaled), type = "scatter", 
         color = factor(result.k$cluster)) %>% 
