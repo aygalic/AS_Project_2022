@@ -3,8 +3,8 @@ title: "Analisi del dataset"
 author: "luca"
 date: '2022-03-18'
 output:
-  html_document: default
   pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
