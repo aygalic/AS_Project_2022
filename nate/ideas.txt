@@ -2,6 +2,15 @@ Ideas:
 - plot colors of the projected drug data which we know belong to a specific cancer type
 - cluster analysis/knn to assign which cancer a drug probably works best on
 - qantify that afterwards 
+  - opens the door to anova (think of some H0's -> TODO)
+  
+- could box cox trasform some data -> new dim would be 266x28 (cell avgs) + 266x28 (lambdas from B-C) for future transforms 
+  
+-data reduction: construct feature vector w average auc scores across cell lines as features!!!
+  - we can either consider averaging over cancer lines OR using clusters from Aygalic rpkm 
+      - note: it is likely the case that each drug has a unique cluster of cells upon which group variance is minimized -> in
+              which case can we do any better than choosing by the cancer types??
+
 
 
 #some APIs/databases for drugs
@@ -13,9 +22,21 @@ Notes:
 
 
 TODO:
-- go back into tki jupyter and cold-search names of drugs that aren't in tki to see if we can uncover another
-class of cancer treatment drug -> rinse and repeat.  Hopefully DrugBank has a similar page for those 
-- Look at the loadings for the pairwise PCAs and for 6 major cancers 
-- think about interpretation of not being able to do PCA once you have p too large 
-- parse the descriptions for the drugs to see which cancers they're good at treating -> apply colours after 
-  - do this in python and export results here 
+- Look at the loadings for PCAs
+- visually check over the dim reduction results with reference to original auc 
+- read over data description to see if cancer types are what they seem, i.e. BREAST primary finding in location 'breast'
+- write a function for querying the data_sample data.frame to facilitate obtaining primary site of finding 
+- AHFS database or labels for drugs
+
+  
+QUALMS:
+- PCA doesn't make sense when considering a single cancer type.  We tricked ourselves into thinking there
+were multiple features when in actuality its like the same feature but multiple measurements 
+- My method of NA filling might be bad in the case where #NA>>#!NA since we're guessing a lot of measurements 
+- Migratory cancer cells might be skewing the shapiro tests for our drugs ove a cancer class 
+
+
+INTERESTING:
+- all "Approved" drugs are labelled and represent 10% of the dataset. This sets up a really nice semi-unsupervised
+framework for classifying unapproved drugs!
+

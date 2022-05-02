@@ -35,7 +35,7 @@ block_dat <-function(cancer_types_, cancer_df){
   cell_indices = match(selected_cells,colnames(cancer_df))
   to_return = data.frame(cancer_df[, cell_indices])
   if(length(selected_cells)==1){
-    colnames(sub_auc)<-selected_cells
+    colnames(to_return)<-selected_cells
   }
   
   if(length(cancer_types_)>1){
