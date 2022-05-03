@@ -2,6 +2,9 @@ setwd("~/OneDrive/polimi/COURSES/S8/APPLIED_STATS/AS_Project_2022")
 
 source("src/utilities.R")
 
+################################################
+############### PREPARE THE DATA ###############
+################################################
 
 # steal Robi's work
 M_AUC <- create_AUC_matrix()
@@ -22,6 +25,14 @@ dim(M1_)
 indexes2 <- rownames(M2) %in% rownames(M1)
 M2_ <- M2[indexes2,]
 dim(M2_)
+
+
+
+
+
+#################################################
+################# ORIGINAL TEST #################
+#################################################
 
 # Do k_means on original matrix and keep only the labels of interest
 k=3
@@ -45,12 +56,6 @@ cbind(result, perf)
 
 average_perf <- mean(perf)
 average_perf
-
-
-
-
-
-
 
 
 
@@ -96,57 +101,65 @@ plot(avg_perfs_kmeans)
 
 # this is a plot of how similar are the classifications between both datasets 
 # depending on the number of cluster
-avg_perfs_kmeans <- c()
+test_all_cluster_algo <- function(j=10){
+  avg_perfs_kmeans <- c()
+  
+  avg_perfs_ce <- c()
+  avg_perfs_ae <- c()
+  avg_perfs_se <- c()
+  
+  avg_perfs_cm <- c()
+  avg_perfs_am <- c()
+  avg_perfs_sm <- c()
+  
+  avg_perfs_cc <- c()
+  avg_perfs_ac <- c()
+  avg_perfs_sc <- c()
+  
+  for(i in 1:j){avg_perfs_kmeans <- c(avg_perfs_kmeans, contingency_table(i, kmeans)$avg_perf)}
+  
+  for(i in 1:j){avg_perfs_ce <- c(avg_perfs_ce, contingency_table(i, hcut, hc_method = "complete", hc_metric ="euclidian")$avg_perf)}
+  for(i in 1:j){avg_perfs_ae <- c(avg_perfs_ae, contingency_table(i, hcut, hc_method = "average", hc_metric ="euclidian")$avg_perf)}
+  for(i in 1:j){avg_perfs_se <- c(avg_perfs_se, contingency_table(i, hcut, hc_method = "single", hc_metric ="euclidian")$avg_perf)}
+  
+  for(i in 1:j){avg_perfs_cm <- c(avg_perfs_cm, contingency_table(i, hcut, hc_method = "complete", hc_metric ="manhattan")$avg_perf)}
+  for(i in 1:j){avg_perfs_am <- c(avg_perfs_am, contingency_table(i, hcut, hc_method = "average", hc_metric ="manhattan")$avg_perf)}
+  for(i in 1:j){avg_perfs_sm <- c(avg_perfs_sm, contingency_table(i, hcut, hc_method = "single", hc_metric ="manhattan")$avg_perf)}
+  
+  for(i in 1:j){avg_perfs_cc <- c(avg_perfs_cc, contingency_table(i, hcut, hc_method = "complete", hc_metric ="canberra")$avg_perf)}
+  for(i in 1:j){avg_perfs_ac <- c(avg_perfs_ac, contingency_table(i, hcut, hc_method = "average", hc_metric ="canberra")$avg_perf)}
+  for(i in 1:j){avg_perfs_sc <- c(avg_perfs_sc, contingency_table(i, hcut, hc_method = "single", hc_metric ="canberra")$avg_perf)}
+  
+  
+  
+  
+  n_clusters <- c(1:j)
+  
+  result <- data.frame(n_clusters, avg_perfs_kmeans,
+                     avg_perfs_ce, avg_perfs_ae, avg_perfs_se,
+                     avg_perfs_cm, avg_perfs_am, avg_perfs_sm,
+                     avg_perfs_cc, avg_perfs_ac, avg_perfs_sc)
+  
+  
+  fig <- plot_ly(result, x = ~n_clusters, y = ~avg_perfs_kmeans, name = 'kmeans', type = 'scatter', mode = 'lines+markers') 
+  fig <- fig %>% add_trace(y = ~avg_perfs_ce, name = 'complete euclidian', mode = 'lines+markers') 
+  fig <- fig %>% add_trace(y = ~avg_perfs_ae, name = 'average euclidian', mode = 'lines+markers') 
+  fig <- fig %>% add_trace(y = ~avg_perfs_se, name = 'single euclidian', mode = 'lines+markers') 
+  
+  fig <- fig %>% add_trace(y = ~avg_perfs_cm, name = 'complete manhattan', mode = 'lines+markers') 
+  fig <- fig %>% add_trace(y = ~avg_perfs_am, name = 'average manhattan', mode = 'lines+markers') 
+  fig <- fig %>% add_trace(y = ~avg_perfs_sm, name = 'single manhattan', mode = 'lines+markers') 
+  
+  fig <- fig %>% add_trace(y = ~avg_perfs_cc, name = 'complete canberra"', mode = 'lines+markers') 
+  fig <- fig %>% add_trace(y = ~avg_perfs_ac, name = 'average canberra', mode = 'lines+markers') 
+  fig <- fig %>% add_trace(y = ~avg_perfs_sc, name = 'single canberra', mode = 'lines+markers') 
+  
+  return(list(result = result, fig = fig))
+  
 
-avg_perfs_ce <- c()
-avg_perfs_ae <- c()
-avg_perfs_se <- c()
+} 
 
-avg_perfs_cm <- c()
-avg_perfs_am <- c()
-avg_perfs_sm <- c()
+result_10 <- test_all_cluster_algo(10)
 
-avg_perfs_cc <- c()
-avg_perfs_ac <- c()
-avg_perfs_sc <- c()
-
-j=40
-for(i in 1:j){avg_perfs_kmeans <- c(avg_perfs_kmeans, contingency_table(i, kmeans)$avg_perf)}
-
-for(i in 1:j){avg_perfs_ce <- c(avg_perfs_ce, contingency_table(i, hcut, hc_method = "complete", hc_metric ="euclidian")$avg_perf)}
-for(i in 1:j){avg_perfs_ae <- c(avg_perfs_ae, contingency_table(i, hcut, hc_method = "average", hc_metric ="euclidian")$avg_perf)}
-for(i in 1:j){avg_perfs_se <- c(avg_perfs_se, contingency_table(i, hcut, hc_method = "single", hc_metric ="euclidian")$avg_perf)}
-
-for(i in 1:j){avg_perfs_cm <- c(avg_perfs_cm, contingency_table(i, hcut, hc_method = "complete", hc_metric ="manhattan")$avg_perf)}
-for(i in 1:j){avg_perfs_am <- c(avg_perfs_am, contingency_table(i, hcut, hc_method = "average", hc_metric ="manhattan")$avg_perf)}
-for(i in 1:j){avg_perfs_sm <- c(avg_perfs_sm, contingency_table(i, hcut, hc_method = "single", hc_metric ="manhattan")$avg_perf)}
-
-for(i in 1:j){avg_perfs_cc <- c(avg_perfs_cc, contingency_table(i, hcut, hc_method = "complete", hc_metric ="canberra")$avg_perf)}
-for(i in 1:j){avg_perfs_ac <- c(avg_perfs_ac, contingency_table(i, hcut, hc_method = "average", hc_metric ="canberra")$avg_perf)}
-for(i in 1:j){avg_perfs_sc <- c(avg_perfs_sc, contingency_table(i, hcut, hc_method = "single", hc_metric ="canberra")$avg_perf)}
-
-
-
-
-n_clusters <- c(1:j)
-
-data <- data.frame(n_clusters, avg_perfs_kmeans,
-                   avg_perfs_ce, avg_perfs_ae, avg_perfs_se,
-                   avg_perfs_cm, avg_perfs_am, avg_perfs_sm,
-                   avg_perfs_cc, avg_perfs_ac, avg_perfs_sc)
-
-
-fig <- plot_ly(data, x = ~x, y = ~avg_perfs_kmeans, name = 'kmeans', type = 'scatter', mode = 'lines+markers') 
-fig <- fig %>% add_trace(y = ~avg_perfs_ce, name = 'complete euclidian', mode = 'lines+markers') 
-fig <- fig %>% add_trace(y = ~avg_perfs_ae, name = 'average euclidian', mode = 'lines+markers') 
-fig <- fig %>% add_trace(y = ~avg_perfs_se, name = 'single euclidian', mode = 'lines+markers') 
-
-fig <- fig %>% add_trace(y = ~avg_perfs_cm, name = 'complete manhattan', mode = 'lines+markers') 
-fig <- fig %>% add_trace(y = ~avg_perfs_am, name = 'average manhattan', mode = 'lines+markers') 
-fig <- fig %>% add_trace(y = ~avg_perfs_sm, name = 'single manhattan', mode = 'lines+markers') 
-
-fig <- fig %>% add_trace(y = ~avg_perfs_cc, name = 'complete canberra"', mode = 'lines+markers') 
-fig <- fig %>% add_trace(y = ~avg_perfs_ac, name = 'average canberra', mode = 'lines+markers') 
-fig <- fig %>% add_trace(y = ~avg_perfs_sc, name = 'single canberra', mode = 'lines+markers') 
-fig
+result_10$fig
 
