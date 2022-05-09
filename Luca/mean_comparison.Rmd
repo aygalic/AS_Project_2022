@@ -1,0 +1,105 @@
+---
+title: "Untitled"
+author: "Luca"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r} 
+#copy paste in console
+#setwd("/Users/lucamainini/Documents/GitHub/AS_Project_2022")
+#import nate's and luca's function
+source(file.path("nate", "utils", "nate_utils.R"))
+source(file.path("Luca", "luca_utils.R"))
+```
+
+```{r import data}
+path="/Users/lucamainini/Documents/GitHub/AS_Project_2022/Dataset"
+result <- import_dataset(path)
+auc=result$auc
+rpkm=result$rpkm
+rm(result)
+```
+
+We work only on Breast cells
+
+```{r selection of breast}
+#data_expression= read.delim(file.path("Dataset", "data_mrna_seq_rpkm.txt"), header = TRUE, comment.char = '#')
+name_cols <- data_expression[,1]
+
+
+sub_rpkm <-block_dat(cancers, rpkm) #otteniamo 46 valori invece dei 53 disponibili (in auc non li abbiamo li altri)
+rpkm_breast <- cbind(sub_rpkm, name_cols)
+View(sub_rpkm)
+dim(sub_rpkm)
+```
+
+```{r}
+cancer_df = data_expression
+type = "BREAST"
+selected_cells = colnames(cancer_df)[grepl(type, colnames(cancer_df))]
+cell_indices = match(selected_cells,colnames(cancer_df))
+to_return = data.frame(cancer_df[, cell_indices])
+if(length(selected_cells)==1){
+  colnames(sub_auc)<-selected_cells
+  }
+```
+
+```{r}
+
+```
+
+
+## PR1: REMOVE DUPLICATES
+```{r remove duplicates}
+library(dplyr)
+rpkm_breast_clean <- distinct(rpkm_breast, .keep_all=TRUE)
+sum(duplicated(rpkm_breast_clean$name))
+```
+
+```{r change rownames}
+rownames(rpkm_breast_clean) <- rpkm_breast_clean$name_cols 
+```
+
+Now we have obtained our clean data set
+```{r visualization}
+head(rpkm_breast_clean)
+```
+
+## PR2: Remove lines with low variance
+
+```{r PR2}
+# PROBLEM 2: Removing lines with low variance
+# we first create a separated matrix of normalized data
+M <- scale(rpkm_breast_clean[,-1])
+
+threshold <- 0.5
+row_var = apply(M, 1, var)
+plot(row_var)
+
+sum(row_var > threshold)
+plot(row_var[row_var > threshold])
+
+data_exp_var <- rpkm_breast_clean[row_var > threshold,]
+```
+
+```{r eval=FALSE, include=FALSE}
+reorder <- function(mat){
+  sum = as.data.frame(rowSums(mat))
+  return ( as.matrix(scale(mat[order(sum),])) )
+}
+```
+
+```{r}
+heatmap(as.matrix(data_exp_var))
+```
+
+```{r}
+apply(data_exp_var, 1, mean)
+```
+
