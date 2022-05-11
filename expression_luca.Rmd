@@ -107,6 +107,7 @@ source(file.path("nate", "utils", "nate_utils.R"))
 ```{r}
 path = "Dataset"
 #data import 
+data_patient = read.delim(file.path(path, "data_clinical_patient.txt"), header = TRUE, comment.char = '#')
 data_sample = read.delim(file.path(path, "data_clinical_sample.txt"), header = TRUE, comment.char = '#')
 data_treatment_auc = read.delim(file.path(path, "data_drug_treatment_auc.txt"), header = TRUE, comment.char = '#')
 data_rpkm = read.delim(file.path(path, "data_mrna_seq_rpkm.txt"), header = TRUE, comment.char = '#')
@@ -141,7 +142,8 @@ auc <-data_treatment_auc[,c(reduced_ids)]
 rownames(auc)<-data_treatment_auc$ENTITY_STABLE_ID
 
 rpkm <-data_rpkm[,c(reduced_ids)]
-#rownames(rpkm)<-data_rpkm$Hugo_Symbol
+rpkm["row_names"]<-data_rpkm$Hugo_Symbol
+#prova <- select(rpkm, -row_names)
 
 #----------------------------------------------------------------------------------------------
 
@@ -155,12 +157,22 @@ cancer_freqs <- factor(str_util(reduced_ids), levels=cancer_types)
 ```
 
 ```{r}
-#To access sub dataframe of specific cancers you just use the function block_dat
-#e.g.
-cancers<-c("BREAST")
-sub_rpkm <-block_dat(cancers, rpkm) #otteniamo 45 valori invece dei 53 disponibili (in auc non li abbiamo li altri)
-View(sub_rpkm)
-dim(sub_rpkm)
+type ="BREAST"
+#prova <- select(rpkm, -row_names)
+rpkm = data_frame(rpkm)
+selected_cells = colnames(rpkm)[grepl(type, colnames(rpkm))]
+cell_indices = match(selected_cells,colnames(rpkm))
+to_return = rpkm[, cell_indices]
+to_return['rows_names'] = rpkm$row_names
+```
+
+```{r}
+# #To access sub dataframe of specific cancers you just use the function block_dat
+# #e.g.
+# cancers<-c("BREAST")
+# sub_rpkm <-block_dat(cancers, rpkm) #otteniamo 45 valori invece dei 53 disponibili (in auc non li abbiamo li altri)
+# View(sub_rpkm)
+# dim(sub_rpkm)
 
 ```
 

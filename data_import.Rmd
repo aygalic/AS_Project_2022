@@ -274,6 +274,7 @@ image(as.matrix(breast_data_treatment_auc))
 ## SELECTION OF DATA (Roberta)
 
 ```{r}
+#breast_data_treatment_auc = t(breast_auc)
 col_names = names(breast_data_treatment_auc)
 perc_NA_col = colMeans(is.na(breast_data_treatment_auc))*100
 for(i in 1:45){
