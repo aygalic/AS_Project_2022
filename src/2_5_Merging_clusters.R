@@ -35,7 +35,7 @@ dim(M2_)
 #################################################
 
 # Do k_means on original matrix and keep only the labels of interest
-k=3
+k=10
 result.AUC <- kmeans(M1, centers=k)$cluster[indexes1]
 result.rpkm <- kmeans(M2, centers=k)$cluster[indexes2]
 
@@ -56,8 +56,6 @@ cbind(result, perf)
 
 average_perf <- mean(perf)
 average_perf
-
-
 
 
 
@@ -159,7 +157,9 @@ test_all_cluster_algo <- function(j=10){
 
 } 
 
-result_10 <- test_all_cluster_algo(10)
+result_10 <- test_all_cluster_algo(20)
 
 result_10$fig
+
+result_10$result
 
