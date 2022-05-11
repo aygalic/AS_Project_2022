@@ -7,6 +7,7 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = '/Users/lucamainini/Documents/GitHub/AS_Project_2022')
 ```
 
 
@@ -19,7 +20,8 @@ source(file.path("Luca", "luca_utils.R"))
 ```
 
 ```{r import data}
-path="/Users/lucamainini/Documents/GitHub/AS_Project_2022/Dataset"
+#path="/Users/lucamainini/Documents/GitHub/AS_Project_2022/Dataset"
+path="Dataset"
 result <- import_dataset(path)
 auc=result$auc
 rpkm=result$rpkm
