@@ -40,39 +40,44 @@ M_scaled <- as.matrix(scale(M))
 #############################
 
 # We reduce the space of cell line and project genes (to see if there are any gene of interest ?)
-reduced_M_scaled = create_reduced_mat(M_scaled, 2)
+reduced_M_scaled = create_reduced_mat(M_scaled, 4)
 
-plot_ly(data = data.frame(reduced_M_scaled), x = ~v1, y = ~v2,
-               text = rownames(reduced_M_scaled), type = "scatter") %>% 
-               layout(margin = c(10,10,10,10,0))
+p1 <- plot_ly(data = data.frame(reduced_M_scaled), x = ~v1, y = ~v2,
+             text = rownames(reduced_M_scaled), type = "scatter") %>% 
+  layout(margin = c(10,10,10,10,0))
 
+p1
+
+
+# saving plot 
+saveWidget(p1, "output/aygalic/PCA_base.html", selfcontained = F, libdir = "lib")
 
 
 # adding color based on overall gene expression (before scaling)
 
 gene_exp = apply(M, 1, sum)
 
-plot_ly(data = data.frame(reduced_M_scaled), x = ~v1, y = ~v2,
+p2 <- plot_ly(data = data.frame(reduced_M_scaled), x = ~v1, y = ~v2,
         text = rownames(reduced_M_scaled), type = "scatter",
         color = gene_exp) %>% 
   layout(margin = c(10,10,10,10,0))
-
+p2
 
 # same but log scaled ?
 
 gene_exp = apply(M, 1, sum)
 gene_exp_scaled = log(gene_exp)
 
-plot_ly(data = data.frame(reduced_M_scaled), x = ~v1, y = ~v2,
+p3 <- plot_ly(data = data.frame(reduced_M_scaled), x = ~v1, y = ~v2,
         text = rownames(reduced_M_scaled), type = "scatter",
         color = gene_exp_scaled) %>% 
   layout(margin = c(10,10,10,10,0))
+p3
+saveWidget(p3, "output/aygalic/PCA_log_scaled_colors.html", selfcontained = F, libdir = "lib")
 
 
 
 # We try a 3D plot 
-reduced_M_scaled = create_reduced_mat(M_scaled, 3)
-
 plot_ly(data = data.frame(reduced_M_scaled), x = ~v1, y = ~v2, z = ~v3,
         text = rownames(reduced_M_scaled),
         color = gene_exp_scaled) %>% 
@@ -82,10 +87,53 @@ plot_ly(data = data.frame(reduced_M_scaled), x = ~v1, y = ~v2, z = ~v3,
 # the observations + it takes forever to render
 
 
+# WE WANT TO INVESTIGATE THE 2 AXIS WE FOUND : 
+
+
+# investigate axis 3
+fig1 <- plot_ly(data = data.frame(reduced_M_scaled), x = ~v1, y = ~v3,
+                text = rownames(reduced_M_scaled), type = "scatter", name = 'v1/v3')
+
+fig2 <- plot_ly(data = data.frame(reduced_M_scaled), x = ~v2, y = ~v3,
+                text = rownames(reduced_M_scaled), type = "scatter", name = 'v2/v3')
+
+p4 <- subplot(fig1, fig2, nrows = 1) 
+p4
+saveWidget(p4, "output/aygalic/PCA_axis_3.html", selfcontained = F, libdir = "lib")
+
+
+# investigate axis 4
+fig1 <- plot_ly(data = data.frame(reduced_M_scaled), x = ~v1, y = ~v4,
+                text = rownames(reduced_M_scaled), type = "scatter", name = 'v1/v4')
+
+fig2 <- plot_ly(data = data.frame(reduced_M_scaled), x = ~v2, y = ~v4,
+                text = rownames(reduced_M_scaled), type = "scatter", name = 'v2/v4')
+
+fig3 <- plot_ly(data = data.frame(reduced_M_scaled), x = ~v3, y = ~v4,
+                text = rownames(reduced_M_scaled), type = "scatter", name = 'v3/v4')
+
+
+
+fig4 <- subplot(fig1, fig2, nrows = 1) 
+p5 <- subplot(fig4, fig3, nrows = 2) 
+p5
+saveWidget(p5, "output/aygalic/PCA_axis_4.html", selfcontained = F, libdir = "lib")
 
 
 
 
+
+
+
+
+
+
+
+
+##########################################################
+############## PCA on the transposed matrix ##############
+##########################################################
+##########################################################
 
 # We want to do PCA projecting the cell lines on a reduced gene space
 tM_scaled = t(M_scaled)
