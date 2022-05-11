@@ -34,7 +34,11 @@ M_scaled <- as.matrix(scale(M))
 
 
 # plot heatmap
-plot_ly(x=colnames(M_scaled), y=rownames(M_scaled), z = M_scaled, type = "heatmap")
+p1 <- plot_ly(x=colnames(M_scaled), y=rownames(M_scaled), z = M_scaled, type = "heatmap")
+p1
+
+saveWidget(p1, "output/aygalic/heatmap.html", selfcontained = F, libdir = "lib")
+
 
 # Dendrogram
 library(heatmaply)
@@ -45,18 +49,3 @@ dev.off()
 
 
 
-# try to remove the most expressed genes from the heatmap to see if it become readable
-#
-#
-
-row.names.remove <- c("MTND2P28", "hsa-mir-6723")
-M_gene_deprived <- M[!(row.names(M) %in% row.names.remove), ]
-M_gene_deprived<-scale(M_gene_deprived)
-
-
-# heatmap it
-plot_ly(x=colnames(M_gene_deprived), y=rownames(M_gene_deprived),
-        z = M_gene_deprived, type = "heatmap")
-
-library(heatmaply)
-heatmaply(M_gene_deprived, k_col = 3)
