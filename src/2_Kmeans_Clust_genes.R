@@ -46,75 +46,50 @@ result.k <- kmeans(M_scaled, centers=2) # Centers: fixed number of clusters
 reduced_M_scaled = create_reduced_mat(M_scaled, 2)
 
 
-p1 <- plot_ly(data = data.frame(reduced_M_scaled), x = ~v1, y = ~v2,
-        text = rownames(reduced_M_scaled), type = "scatter", 
-        color = factor(result.k$cluster)) %>% 
-  layout(margin = c(10,10,10,10,0))
-p1 
-
-
-
-
-# experimenting with the number of clusters
-result.k <- kmeans(M_scaled, centers=3) # Centers: fixed number of clusters
-p2 <- plot_ly(data = data.frame(reduced_M_scaled), x = ~v1, y = ~v2,
-        text = rownames(reduced_M_scaled), type = "scatter", 
-        color = factor(result.k$cluster)) %>% 
-  layout(margin = c(10,10,10,10,0))
-p2
-
-# experimenting with the number of clusters
-result.k <- kmeans(M_scaled, centers=5) # Centers: fixed number of clusters
-plot_ly(data = data.frame(reduced_M_scaled), x = ~v1, y = ~v2,
-        text = rownames(reduced_M_scaled), type = "scatter", 
-        color = factor(result.k$cluster)) %>% 
-  layout(margin = c(10,10,10,10,0))
-
-plot_ly(data = data.frame(reduced_M_scaled), x = ~v1, y = ~v2,
-        mode = "markers", 
-        marker = list(color = factor(result.k$cluster)),
-        text = rownames(reduced_M_scaled), type = "scatter") %>% 
-  layout(margin = c(10,10,10,10,0))
-
-
-
-
-
-
 # BIGG BRAIN PLOT
-
-
-
-j = 2
+j = 1
 k = 10
 aval <- list()
 for(step in j:k){
   aval[[step]] <-list(visible = FALSE,
                       x = reduced_M_scaled$v1,
                       y = reduced_M_scaled$v2,
-                      name = step,
+                      lab = rownames(reduced_M_scaled),
                       col = kmeans(M_scaled, centers=step)$cluster)
 }
-aval[3][[1]]$visible = TRUE
+aval[k-1][[1]]$visible = TRUE
 
 # create steps and plot all traces
 steps <- list()
 fig <- plot_ly()
 for (i in j:k) {
-  fig <- add_trace(fig,x=aval[i][[1]]$x,  y=aval[i][[1]]$y, visible = aval[i][[1]]$visible,
-                   type = 'scatter', mode = 'markers', marker=list(color=aval[i][[1]]$col),
-                   name = aval[i][[1]]$name)
+  fig <- add_markers(fig,
+                     name = paste(i, "clusters"),
+                     x=aval[i][[1]]$x,  y=aval[i][[1]]$y, 
+                     visible = aval[i][[1]]$visible,
+                     hoverinfo = "text",
+                     text  = aval[i][[1]]$lab,
+                     marker = list(color = aval[i][[1]]$col),
+                     showlegend = F) 
   
   step <- list(args = list('visible', rep(FALSE, length(aval))),
-               method = 'restyle')
+               method = 'restyle', label = i)
   step$args[[2]][i] = TRUE  
   steps[[i]] = step 
 }  
 
 # add slider control to plot
 fig <- fig %>%
-  layout(sliders = list(list(active = 3,
-                             currentvalue = list(prefix = "Number of clust: "),
-                             steps = steps)))
+  layout(sliders = list(
+    list(active = k-1, 
+         currentvalue = list(prefix = "Number of clust: "), 
+         steps = steps)
+    )
+  )
+
 
 fig
+
+
+saveWidget(fig, "output/aygalic/kmeans_clust_genes.html", selfcontained = F, libdir = "lib")
+
