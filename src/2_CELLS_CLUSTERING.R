@@ -259,7 +259,108 @@ saveWidget(fig, "output/aygalic/Clust_cells.html", selfcontained = F, libdir = "
 
 
 
+# same with breast cancer
+
+#
+
+cancer_type_selection <- c(7)
+M = Build_matrix_for_multiple_cancer_types(cancer_type_selection)
+tags = M$Tags
+M <- M$Mat
+M_ <- as.matrix(scale(M))
+M_ <-t(M)
+reduced_M_scaled = create_reduced_mat(M_, 2)
+
+# useful values
+algos <- list(
+  c("euclidian","single"),
+  c("euclidian","average"),
+  c("euclidian","complete"),
+  c("manhattan","single"),
+  c("manhattan","average"),
+  c("manhattan","complete"),
+  c("canberra","single"),
+  c("canberra","average"),
+  c("canberra","complete")
+)
+v1 = reduced_M_scaled$v1
+v2 = reduced_M_scaled$v2
+names = rownames(reduced_M_scaled)
+size = length(v1)
+k = 10
 
 
+# FIRST WE BUILD THE FIRST TRACE 
+# We une this one with kmeans since it's the only different algo
+
+df <- data.frame(x = list(), y = list(), frame = list(), clust = list())
+for(i in 1:k){
+  df <- rbind(df, data.frame(x = v1, y = v2, frame = rep(i, size), name = names,
+                             clust = kmeans(M_, centers=i)$cluster))
+}
+
+fig <- df %>% plot_ly()
+
+fig <- fig %>% add_markers(
+  x = ~x, y = ~y, 
+  hoverinfo = "text",
+  text = ~name,
+  frame = ~frame,
+  color = ~clust,
+  marker = list(colorscale = 'Viridis'),
+  showlegend = F
+) 
+
+# THEN WE ADD A TRACE FOR EACH TREE ALGO
+for(algo in algos){
+  df <- data.frame( x = list(), y = list(), frame = list(), clust = list())
+  for(i in 1:k){
+    df <- rbind(df, data.frame(x = v1, y = v2, frame = rep(i ,size), name = names,
+                               clust = hcut(M_, i, hc_method = algo[2], hc_metric= algo[1])$cluster))
+  }
+  
+  fig <- fig %>% add_markers(
+    data = df, x = ~x, y = ~y,
+    text = ~name,
+    hoverinfo = "text",
+    frame = ~frame,
+    color = ~clust,
+    marker =list(colorscale = 'Viridis'),
+    showlegend = F,
+    visible = F
+  )
+}
+
+
+
+# add algorithm selection
+fig <- fig %>% layout(
+  title = "Comparing clustering Algo for BREAST CANCER ONLY",
+  xaxis = list(title = "PCA Axis 1"),
+  yaxis = list(title = "PCA Axis 2"),
+  updatemenus = list(
+    list(
+      y = 0.8,
+      buttons = list(
+        list(method = "restyle", args = list("visible", list(T, F, F, F, F, F, F, F, F, F)), label = "kmeans"),
+        list(method = "restyle", args = list("visible", list(F, T, F, F, F, F, F, F, F, F)), label = "euclidian single"),       
+        list(method = "restyle", args = list("visible", list(F, F, T, F, F, F, F, F, F, F)), label = "euclidian average"),        
+        list(method = "restyle", args = list("visible", list(F, F, F, T, F, F, F, F, F, F)), label = "euclidian complete"),        
+        list(method = "restyle", args = list("visible", list(F, F, F, F, T, F, F, F, F, F)), label = "manhattan single"),        
+        list(method = "restyle", args = list("visible", list(F, F, F, F, F, T, F, F, F, F)), label = "manhattan average"),        
+        list(method = "restyle", args = list("visible", list(F, F, F, F, F, F, T, F, F, F)), label = "manhattan complete"),        
+        list(method = "restyle", args = list("visible", list(F, F, F, F, F, F, F, T, F, F)), label = "canberra single"),        
+        list(method = "restyle", args = list("visible", list(F, F, F, F, F, F, F, F, T, F)), label = "canberra average"),        
+        list(method = "restyle", args = list("visible", list(F, F, F, F, F, F, F, F, F, T)), label = "canberra complete")
+      )
+    )
+  )
+) 
+# add the animation for the number of clusters
+fig <- fig %>% animation_opts(0, easing = "elastic", redraw = TRUE) %>% hide_colorbar()
+fig
+
+
+saveWidget(fig, "output/aygalic/Clust_cells_BREAST.html", selfcontained = F, libdir = "lib")
 
 
