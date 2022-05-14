@@ -211,6 +211,11 @@ names2 = rownames(reduced_M2_scaled)
 size = length(v2.1)
 
 
+# FOR CONVEIGNANCE WE DECIDE TO PROJECT ON THE SAME REDUCED SPACE :
+v2.1 = v1.1
+v2.2 = v1.2
+
+
 # FIRST WE BUILD THE FIRST TRACE 
 # We une this one with kmeans since it's the only different algo
 
