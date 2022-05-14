@@ -163,3 +163,163 @@ result_10$fig
 
 result_10$result
 
+
+
+
+
+
+
+
+################################
+######## Big brain plot ######## 
+######## Big brain plot ######## 
+######## Big brain plot ######## 
+######## Big brain plot ######## 
+######## Big brain plot ######## 
+######## Big brain plot ######## 
+################################
+
+reduced_M1_scaled <- create_reduced_mat(M1_)
+reduced_M2_scaled <- create_reduced_mat(M2_)
+
+
+# useful values
+algos <- list(
+  c("euclidian","single"),
+  c("euclidian","average"),
+  c("euclidian","complete"),
+  c("manhattan","single"),
+  c("manhattan","average"),
+  c("manhattan","complete"),
+  c("canberra","single"),
+  c("canberra","average"),
+  c("canberra","complete")
+)
+k = 10
+
+# RPKM related stuff
+v1.1 = reduced_M1_scaled$v1
+v1.2 = reduced_M1_scaled$v2
+names1 = rownames(reduced_M1_scaled)
+size = length(v1.1)
+k = 10
+
+# AUC response related stuff
+v2.1 = reduced_M2_scaled$v1
+v2.2 = reduced_M2_scaled$v2
+names2 = rownames(reduced_M2_scaled)
+size = length(v2.1)
+
+
+# FIRST WE BUILD THE FIRST TRACE 
+# We une this one with kmeans since it's the only different algo
+
+df1 <- data.frame(x = list(), y = list(), frame = list(), clust = list())
+df2 <- data.frame(x = list(), y = list(), frame = list(), clust = list())
+
+
+for(i in 1:k){
+  df1 <- rbind(df1, data.frame(x = v1.1, y = v1.2, frame = rep(i, size), name = names1,
+                               clust = kmeans(M1_, centers=i)$cluster))
+  
+  df2 <- rbind(df2, data.frame(x = v2.1, y = v2.2, frame = rep(i, size), name = names2,
+                               clust = kmeans(M2_, centers=i)$cluster))
+}
+
+
+
+
+
+fig1 <- df1 %>% plot_ly()
+fig2 <- df2 %>% plot_ly()
+
+fig1 <- fig1 %>% add_markers(
+  x = ~x, y = ~y, 
+  hoverinfo = "text",
+  text = ~name,
+  frame = ~frame,
+  color = ~clust,
+  marker = list(colorscale = 'Viridis'),
+  showlegend = F
+) 
+
+# since each figure has its own dataset there isn't a lot to change here
+fig2 <- fig2 %>% add_markers(
+  x = ~x, y = ~y, 
+  hoverinfo = "text",
+  text = ~name,
+  frame = ~frame,
+  color = ~clust,
+  marker = list(colorscale = 'Viridis'),
+  showlegend = F
+) 
+
+# THEN WE ADD A TRACE FOR EACH TREE ALGO
+for(algo in algos){
+  df1 <- data.frame( x = list(), y = list(), frame = list(), clust = list())
+  df2 <- data.frame( x = list(), y = list(), frame = list(), clust = list())
+  for(i in 1:k){
+    df1 <- rbind(df1, data.frame(x = v1.1, y = v1.2, frame = rep(i ,size), name = names1,
+                                 clust = hcut(M1_, i, hc_method = algo[2], hc_metric= algo[1])$cluster))
+    
+    df2 <- rbind(df2, data.frame(x = v2.1, y = v2.2, frame = rep(i ,size), name = names2,
+                                 clust = hcut(M2_, i, hc_method = algo[2], hc_metric= algo[1])$cluster))
+  }
+  
+  fig1 <- fig1 %>% add_markers(
+    data = df1, x = ~x, y = ~y,
+    text = ~name,
+    hoverinfo = "text",
+    frame = ~frame,
+    color = ~clust,
+    marker =list(colorscale = 'Viridis'),
+    showlegend = F,
+    visible = F
+  )
+  fig2 <- fig2 %>% add_markers(
+    data = df2, x = ~x, y = ~y,
+    text = ~name,
+    hoverinfo = "text",
+    frame = ~frame,
+    color = ~clust,
+    marker =list(colorscale = 'Viridis'),
+    showlegend = F,
+    visible = F
+  )
+}
+
+
+fig <- subplot(fig1, fig2)
+  
+# add algorithm selection
+fig <- fig %>% layout(
+  title = "Comparing clustering Algo between the 2 datasets",
+  xaxis = list(title = "PCA Axis 1"),
+  yaxis = list(title = "PCA Axis 2"),
+  updatemenus = list(
+    list(
+      y = 0.8,
+      buttons = list(
+        list(method = "restyle", args = list("visible", list(T, F, F, F, F, F, F, F, F, F)), label = "kmeans"),
+        list(method = "restyle", args = list("visible", list(F, T, F, F, F, F, F, F, F, F)), label = "euclidian single"),       
+        list(method = "restyle", args = list("visible", list(F, F, T, F, F, F, F, F, F, F)), label = "euclidian average"),        
+        list(method = "restyle", args = list("visible", list(F, F, F, T, F, F, F, F, F, F)), label = "euclidian complete"),        
+        list(method = "restyle", args = list("visible", list(F, F, F, F, T, F, F, F, F, F)), label = "manhattan single"),        
+        list(method = "restyle", args = list("visible", list(F, F, F, F, F, T, F, F, F, F)), label = "manhattan average"),        
+        list(method = "restyle", args = list("visible", list(F, F, F, F, F, F, T, F, F, F)), label = "manhattan complete"),        
+        list(method = "restyle", args = list("visible", list(F, F, F, F, F, F, F, T, F, F)), label = "canberra single"),        
+        list(method = "restyle", args = list("visible", list(F, F, F, F, F, F, F, F, T, F)), label = "canberra average"),        
+        list(method = "restyle", args = list("visible", list(F, F, F, F, F, F, F, F, F, T)), label = "canberra complete")
+      )
+    )
+  )
+) 
+# add the animation for the number of clusters
+fig <- fig %>% animation_opts(0, easing = "elastic", redraw = TRUE) %>% hide_colorbar()
+fig
+
+
+saveWidget(fig, "output/aygalic/CLUSTERING_COMPARAISON.html", selfcontained = F, libdir = "lib")
+
+
+
