@@ -9,11 +9,11 @@ source("src/utilities.R")
 # steal Robi's work
 M_AUC <- create_AUC_matrix()
 # TAKING ONLY FEW SAMPLES
-M_AUC <- M_AUC[1:500,]
 M1<- as.matrix(scale(M_AUC))
 
 # merge with mine
 M <- Build_matrix_for_multiple_cancer_types()$Mat
+#M <- Build_matrix_for_multiple_cancer_types(c(7))$Mat
 M_scaled <- as.matrix(scale(M))
 M2 <- t(M_scaled)
 
@@ -47,6 +47,7 @@ result <- table(result.AUC, result.rpkm)
 rownames(result) <- paste(rownames(result),"AUC")
 colnames(result) <- paste(colnames(result),"rpkm")
 result
+heatmap(result)
 
 #WHAT IS THE AMOUNT OF CORRECT LABELING ?
 result.max <- apply(result, 1, max)
@@ -159,12 +160,13 @@ test_all_cluster_algo <- function(j=10){
 
 } 
 
-result_10 <- test_all_cluster_algo(20)
+result_10 <- test_all_cluster_algo(10)
 
 result_10$fig
 
 result_10$result
 
+saveWidget(result_10$fig, "output/aygalic/CLUSTERING_COMPARAISON_TABLE.html", selfcontained = F, libdir = "lib")
 
 
 
@@ -212,7 +214,6 @@ v1 = reduced_M1_scaled$v1
 v2 = reduced_M1_scaled$v2
 names = rownames(reduced_M1_scaled)
 size = length(v1)
-k = 5
 
 # We will use the projection axis of the RPKM dataset instead of the AUC one. 
 # This shouldn't make a difference
@@ -274,7 +275,7 @@ for(alg in all_algos){
     hoverinfo = "text",
     frame = ~frame,
     color = ~clust,
-    marker =list(colorscale = 'Picnic'),
+    marker =list(colorscale = 'Jet'),
     #showlegend = F, 
     visible = VISIBLE
   )
@@ -285,12 +286,11 @@ for(alg in all_algos){
     hoverinfo = "text",
     frame = ~frame,
     color = ~clust,
-    marker =list(colorscale = 'Picnic'),
+    marker =list(colorscale = 'Jet'),
     #showlegend = F,
     visible = VISIBLE
   )
 }
-fig1
 
 
 
@@ -298,36 +298,43 @@ fig1
 
 
 METHOD = "update"
-BTN = list(
-  list(method = METHOD, args = list(list(visible = c(T, F, F, F, F, F, F, F, F, F)), list(title = "1")), label = "kmeans"),
-  list(method = METHOD, args = list(list(visible = c(F, T, F, F, F, F, F, F, F, F)), list(title = "2")), label = "euclidian single"),       
-  list(method = METHOD, args = list(list(visible = c(F, F, T, F, F, F, F, F, F, F)), list(title = "3")), label = "euclidian average"),        
-  list(method = METHOD, args = list(list(visible = c(F, F, F, T, F, F, F, F, F, F)), list(title = "4")), label = "euclidian complete"),        
-  list(method = METHOD, args = list(list(visible = c(F, F, F, F, T, F, F, F, F, F)), list(title = "5")), label = "manhattan single"),        
-  list(method = METHOD, args = list(list(visible = c(F, F, F, F, F, T, F, F, F, F)), list(title = "6")), label = "manhattan average"),        
-  list(method = METHOD, args = list(list(visible = c(F, F, F, F, F, F, T, F, F, F)), list(title = "7")), label = "manhattan complete"),        
-  list(method = METHOD, args = list(list(visible = c(F, F, F, F, F, F, F, T, F, F)), list(title = "8")), label = "canberra single"),        
-  list(method = METHOD, args = list(list(visible = c(F, F, F, F, F, F, F, F, T, F)), list(title = "9")), label = "canberra average"),        
-  list(method = METHOD, args = list(list(visible = c(F, F, F, F, F, F, F, F, F, T)), list(title = "10")), label = "canberra complete")
+
+
+# We are showing 2 traces at once : you can see this "matrix" in the following way:
+# 2 square matrices with a diagonal "TRUE" separated by a column of "FALSE"
+# The column of false is here to make everything coherent
+BTN1 = list(  
+  list(method = METHOD, args = list(list(visible = c(T, F, F, F, F, F, F, F, F, F, F, T, F, F, F, F, F, F, F, F, F, F))), label = "kmeans"),
+  list(method = METHOD, args = list(list(visible = c(F, T, F, F, F, F, F, F, F, F, F, F, T, F, F, F, F, F, F, F, F, F))), label = "euclidian single"),       
+  list(method = METHOD, args = list(list(visible = c(F, F, T, F, F, F, F, F, F, F, F, F, F, T, F, F, F, F, F, F, F, F))), label = "euclidian average"),        
+  list(method = METHOD, args = list(list(visible = c(F, F, F, T, F, F, F, F, F, F, F, F, F, F, T, F, F, F, F, F, F, F))), label = "euclidian complete"),        
+  list(method = METHOD, args = list(list(visible = c(F, F, F, F, T, F, F, F, F, F, F, F, F, F, F, T, F, F, F, F, F, F))), label = "manhattan single"),        
+  list(method = METHOD, args = list(list(visible = c(F, F, F, F, F, T, F, F, F, F, F, F, F, F, F, F, T, F, F, F, F, F))), label = "manhattan average"),        
+  list(method = METHOD, args = list(list(visible = c(F, F, F, F, F, F, T, F, F, F, F, F, F, F, F, F, F, T, F, F, F, F))), label = "manhattan complete"),        
+  list(method = METHOD, args = list(list(visible = c(F, F, F, F, F, F, F, T, F, F, F, F, F, F, F, F, F, F, T, F, F, F))), label = "canberra single"),        
+  list(method = METHOD, args = list(list(visible = c(F, F, F, F, F, F, F, F, T, F, F, F, F, F, F, F, F, F, F, T, F, F))), label = "canberra average"),        
+  list(method = METHOD, args = list(list(visible = c(F, F, F, F, F, F, F, F, F, T, F, F, F, F, F, F, F, F, F, F, T, F))), label = "canberra complete")
 )
 
-BTN1 = list(
-  list(method = METHOD, args = list(list(visible = c(T, F, F, F, F, F, F, F, F, F, F, T, F, F, F, F, F, F, F, F, F, F)), list(title = "1")), label = "kmeans"),
-  list(method = METHOD, args = list(list(visible = c(F, T, F, F, F, F, F, F, F, F, F, F, T, F, F, F, F, F, F, F, F, F)), list(title = "2")), label = "euclidian single"),       
-  list(method = METHOD, args = list(list(visible = c(F, F, T, F, F, F, F, F, F, F, F, F, F, T, F, F, F, F, F, F, F, F)), list(title = "3")), label = "euclidian average"),        
-  list(method = METHOD, args = list(list(visible = c(F, F, F, T, F, F, F, F, F, F, F, F, F, F, T, F, F, F, F, F, F, F)), list(title = "4")), label = "euclidian complete"),        
-  list(method = METHOD, args = list(list(visible = c(F, F, F, F, T, F, F, F, F, F, F, F, F, F, F, T, F, F, F, F, F, F)), list(title = "5")), label = "manhattan single"),        
-  list(method = METHOD, args = list(list(visible = c(F, F, F, F, F, T, F, F, F, F, F, F, F, F, F, F, T, F, F, F, F, F)), list(title = "6")), label = "manhattan average"),        
-  list(method = METHOD, args = list(list(visible = c(F, F, F, F, F, F, T, F, F, F, F, F, F, F, F, F, F, T, F, F, F, F)), list(title = "7")), label = "manhattan complete"),        
-  list(method = METHOD, args = list(list(visible = c(F, F, F, F, F, F, F, T, F, F, F, F, F, F, F, F, F, F, T, F, F, F)), list(title = "8")), label = "canberra single"),        
-  list(method = METHOD, args = list(list(visible = c(F, F, F, F, F, F, F, F, T, F, F, F, F, F, F, F, F, F, F, T, F, F)), list(title = "9")), label = "canberra average"),        
-  list(method = METHOD, args = list(list(visible = c(F, F, F, F, F, F, F, F, F, T, F, F, F, F, F, F, F, F, F, F, T, F)), list(title = "10")), label = "canberra complete")
+
+# this is just a draft for now 
+BTN2 = list(  
+  list(method = METHOD, args = list(list(visible = c(T, F, F, F, F, F, F, F, F, F, F, T, F, F, F, F, F, F, F, F, F, F, F, T, F, F, F, F, F, F, F, F, F, F, T, F, F, F, F, F, F, F, F, F, F))), label = "kmeans"),
+  list(method = METHOD, args = list(list(visible = c(F, T, F, F, F, F, F, F, F, F, F, F, T, F, F, F, F, F, F, F, F, F, F, F, T, F, F, F, F, F, F, F, F, F, F, T, F, F, F, F, F, F, F, F, F))), label = "euclidian single"),       
+  list(method = METHOD, args = list(list(visible = c(F, F, T, F, F, F, F, F, F, F, F, F, F, T, F, F, F, F, F, F, F, F, F, F, F, T, F, F, F, F, F, F, F, F, F, F, T, F, F, F, F, F, F, F, F))), label = "euclidian average"),        
+  list(method = METHOD, args = list(list(visible = c(F, F, F, T, F, F, F, F, F, F, F, F, F, F, T, F, F, F, F, F, F, F, F, F, F, F, T, F, F, F, F, F, F, F, F, F, F, T, F, F, F, F, F, F, F))), label = "euclidian complete"),        
+  list(method = METHOD, args = list(list(visible = c(F, F, F, F, T, F, F, F, F, F, F, F, F, F, F, T, F, F, F, F, F, F, F, F, F, F, F, T, F, F, F, F, F, F, F, F, F, F, T, F, F, F, F, F, F))), label = "manhattan single"),        
+  list(method = METHOD, args = list(list(visible = c(F, F, F, F, F, T, F, F, F, F, F, F, F, F, F, F, T, F, F, F, F, F, F, F, F, F, F, F, T, F, F, F, F, F, F, F, F, F, F, T, F, F, F, F, F))), label = "manhattan average"),        
+  list(method = METHOD, args = list(list(visible = c(F, F, F, F, F, F, T, F, F, F, F, F, F, F, F, F, F, T, F, F, F, F, F, F, F, F, F, F, F, T, F, F, F, F, F, F, F, F, F, F, T, F, F, F, F))), label = "manhattan complete"),        
+  list(method = METHOD, args = list(list(visible = c(F, F, F, F, F, F, F, T, F, F, F, F, F, F, F, F, F, F, T, F, F, F, F, F, F, F, F, F, F, F, T, F, F, F, F, F, F, F, F, F, F, T, F, F, F))), label = "canberra single"),        
+  list(method = METHOD, args = list(list(visible = c(F, F, F, F, F, F, F, F, T, F, F, F, F, F, F, F, F, F, F, T, F, F, F, F, F, F, F, F, F, F, F, T, F, F, F, F, F, F, F, F, F, F, T, F, F))), label = "canberra average"),        
+  list(method = METHOD, args = list(list(visible = c(F, F, F, F, F, F, F, F, F, T, F, F, F, F, F, F, F, F, F, F, T, F, F, F, F, F, F, F, F, F, F, F, T, F, F, F, F, F, F, F, F, F, F, T, F))), label = "canberra complete")
 )
 
 
 # add algorithm selection
 
-fig <- subplot(fig1, fig2) %>% animation_opts(0, easing = "linear", redraw = F) 
+fig <- subplot(fig1, fig2) %>% animation_opts(1000, easing = "elastic", redraw = F) 
 fig <- fig %>% layout(
   title = "Comparing clustering Algo between the 2 datasets",
   xaxis = list(title = "PCA Axis 1"),
@@ -344,8 +351,11 @@ fig <- fig %>% layout(
 
 
 #fig %>% hide_colorbar()
-fig
 
+# add javascript because plotly is an undocumented glitchy sesspool
+# fig %>% onRender("")
+  
+fig
 saveWidget(fig, "output/aygalic/CLUSTERING_COMPARAISON.html", selfcontained = F, libdir = "lib")
 
 
