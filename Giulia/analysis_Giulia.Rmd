@@ -114,21 +114,7 @@ mean(perc_NA_col)
 mean(is.na(reduced_data_treatment))*100
 
 # Substitute NA value with 0.5
-#reduced_data_treatment[is.na(reduced_data_treatment)]= 0.5
-#sum(is.na(reduced_data_treatment))
-
-rows = rowMeans(reduced_data_treatment, na.rm = TRUE)
-
-for(i in 1:143)
-{
-  for(j in 1:43)
-  {
-    if(is.na(reduced_data_treatment[i,j])==TRUE)
-    {
-      reduced_data_treatment[i,j] = rows[i]
-    }
-  }
-}
+reduced_data_treatment[is.na(reduced_data_treatment)]= 0.5
 sum(is.na(reduced_data_treatment))
 ```
 
