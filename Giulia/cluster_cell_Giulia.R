@@ -233,6 +233,7 @@ R3=  R[index_match_3,]
 R_new= rbind(R1,R2,R3)
 library(heatmaply)
 heatmaply(data.matrix(R_new))
+
 #most expressed genes in R1
 col1<-NULL
 for(i in 1:length(index_match_1))
@@ -248,8 +249,21 @@ X11()
 par(mfrow=c(1,2))
 plot(R1,col=col1)
 plot(reduced_M_scaled, col=col1)
-max(R1) #
-min(R1) #
+max(R1) #7.21225
+min(R1) #-2.2371
+sum(R1>0) #6115
+sum(R1<0) #13091
+sum(R1>5) #72
+sum(R1<5) #19134
+R1_mean=apply(R1,2,mean)
+R1_var= apply(R1,2,var)
+x11()
+par(mfrow=c(1,2))
+plot(R1_var)
+plot(R1_mean)
+
+heatmaply(data.matrix(R1))
+
 
 col2<-NULL
 for(i in 1:length(index_match_2))
@@ -286,4 +300,12 @@ plot(reduced_R3,col=col3)
 max(R3) #7.0511
 min(R3) #-1.723492
 
+
+
+
+library(fpc)
+
+db <- dbscan(M,eps=5,MinPts = 2)
+db$cluster
+db
 

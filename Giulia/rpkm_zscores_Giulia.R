@@ -2,7 +2,7 @@
 
 data_patient_= read.delim(file.path("Dataset", "data_clinical_patient.txt"), header = TRUE, comment.char = '#')
 data_sample= read.delim(file.path("Dataset",'data_clinical_sample.txt'), header = TRUE, comment.char = '#')
-original_data_mrna = read.delim(file.path("Dataset", "data_mrna_seq_rpkm.txt"), header = TRUE, comment.char = '#', nrows=100)
+original_data_mrna = read.delim(file.path("Dataset", "1_rpkm.txt"), header = TRUE, comment.char = '#')
 
 rownames(original_data_mrna) <- original_data_mrna$Hugo_Symbol
 original_data_mrna[,1] <-NULL
