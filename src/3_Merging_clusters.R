@@ -253,24 +253,25 @@ for(i in 1:k){
                                algo = rep(all_algos[[1]], size)))
 }
 
+#dim 6450 6
 
 for(j in 2:n_algo){
   for(i in 1:k){
     df1 <- rbind(df1, data.frame(x = v1_M1, y = v2_M1, frame = rep(i, size), name = names,
                                  clust = hcut(M1_, i, hc_method = algos[[j-1]][2], hc_metric= algos[[j-1]][1])$cluster, 
-                                 algo = rep(all_algos[[1]], size)))
+                                 algo = rep(all_algos[[j]], size)))
     
     df2 <- rbind(df2, data.frame(x = v1_M1, y = v2_M1, frame = rep(i, size), name = names,
                                  clust = hcut(M2_, i, hc_method = algos[[j-1]][2], hc_metric= algos[[j-1]][1])$cluster,
-                                 algo = rep(all_algos[[1]], size)))
+                                 algo = rep(all_algos[[j]], size)))
     
     df3 <- rbind(df3, data.frame(x = v1_M2, y = v2_M2, frame = rep(i, size), name = names,
                                  clust = hcut(M1_, i, hc_method = algos[[j-1]][2], hc_metric= algos[[j-1]][1])$cluster, 
-                                 algo = rep(all_algos[[1]], size)))
+                                 algo = rep(all_algos[[j]], size)))
     
     df4 <- rbind(df4, data.frame(x = v1_M2, y = v2_M2, frame = rep(i, size), name = names,
                                  clust = hcut(M2_, i, hc_method = algos[[j-1]][2], hc_metric= algos[[j-1]][1])$cluster,
-                                 algo = rep(all_algos[[1]], size)))
+                                 algo = rep(all_algos[[j]], size)))
     
     
   }
@@ -294,6 +295,9 @@ for(alg in all_algos){
   df4_ <- df4[df4$algo == alg,]
   #dubug
   print(dim(df1_))
+  print(dim(df2_))
+  print(dim(df3_))
+  print(dim(df4_))
   print(alg)
   print(VISIBLE)
   
@@ -369,9 +373,7 @@ BTN1 = list(
 
 # add algorithm selection
 
-fig5 <- subplot(fig1, fig2) 
-fig6 <- subplot(fig3, fig4) 
-fig <- subplot(fig5, fig6, nrows = 2) 
+fig <- subplot(fig1, fig2, fig3, fig4, nrows = 2) 
 
 # this is just a draft for now 
 BTN2 = list(  
