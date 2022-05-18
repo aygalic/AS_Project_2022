@@ -168,11 +168,75 @@ result_10$result
 
 saveWidget(result_10$fig, "output/aygalic/CLUSTERING_COMPARAISON_TABLE.html", selfcontained = F, libdir = "lib")
 
+######## ######## ######## ######## 
+######## ######## ######## ######## 
+######## ALIGNING CLUSTERS ######## 
+######## ######## ######## ######## 
+######## ######## ######## ######## 
 
 
+# This function is designed to match the centroid of the 2 groups of clusters
+# in a given projection space
+#
+# Match clusters2 to clusters1
+#
+# returns a new list of clusters based on clusters2, 
+# but with indexes swapped to match clusters1's centroids
+align_clusters_in_space <- function(clusters1, clusters2, projected_obs){
+  n_clusters <- max(clusters1)
+  if(n_clusters<2) return(clusters2)
+  
+  new_clusters <- clusters2
+  for(i in 1:n_clusters){
+    # find centroid of each cluster for the first dataset
+    data <- projected_obs[clusters1==i,]
+    centroid1 <- rapply(data, mean)
+
+    # find the matching centroid
+    # start with clust 1 ofc
+    k = 1
+    centroid2 <- rapply(projected_obs[clusters2==k,], mean)
+    # compute the original distance
+    d = dist(rbind(centroid1, centroid2))
+
+  
+    for(j in 2:n_clusters){
+      centroid2_ <- rapply(projected_obs[clusters2==j,], mean)
+      # compute the distance bewteen current centroids
+      d_ = dist(rbind(centroid1, centroid2_))
+      if(d_ < d){
+        d <- d_
+        centroid2 <- centroid2_
+        k = j
+      }
+    }
+    # set the new cluster k of clusters2 to the cluster i of clusters1
+    new_clusters[clusters2==k] <- i
+  }
+  return (new_clusters)
+}
+  
+
+# testing this function :
+reduced_M1_scaled <- create_reduced_mat(M1_)
 
 
+k=10
+result.AUC <- kmeans(M1, centers=k)$cluster[indexes1]
+# let's mess around with the clusters
+new_clust <- result.AUC
+# swap a few clusters
+new_clust[result.AUC==1] <- 4
+new_clust[result.AUC==4] <- 1
 
+new_clust[result.AUC==8] <- 2
+new_clust[result.AUC==2] <- 8
+
+sum(!new_clust==result.AUC)
+
+# realign ? 
+new_clust <- align_clusters_in_space(result.AUC, new_clust, reduced_M1_scaled)
+sum(!new_clust==result.AUC) #ok
 
 ################################
 ######## Big brain plot ######## 
@@ -234,43 +298,63 @@ df2 <- data.frame(x = list(), y = list(), frame = list(), clust = list(), algo =
 df3 <- data.frame(x = list(), y = list(), frame = list(), clust = list(), algo = list())
 df4 <- data.frame(x = list(), y = list(), frame = list(), clust = list(), algo = list())
 
+ALIGN = TRUE
 
 for(i in 1:k){
+  clusters1 = kmeans(M1_, centers=i)$cluster
+  clusters2 = kmeans(M2_, centers=i)$cluster
+  clusters3 = kmeans(M1_, centers=i)$cluster
+  clusters4 = kmeans(M2_, centers=i)$cluster
+  
+  if(ALIGN){
+    clusters2 <- align_clusters_in_space(clusters1, clusters2, reduced_M1_scaled)
+    clusters4 <- align_clusters_in_space(clusters3, clusters4, reduced_M2_scaled)
+  }
+  
   df1 <- rbind(df1, data.frame(x = v1_M1, y = v2_M1, frame = rep(i, size), name = names,
-                               clust = kmeans(M1_, centers=i)$cluster, 
+                               clust = clusters1, 
                                algo = rep(all_algos[[1]], size)))
   
   df2 <- rbind(df2, data.frame(x = v1_M1, y = v2_M1, frame = rep(i, size), name = names,
-                               clust = kmeans(M2_, centers=i)$cluster, 
+                               clust = clusters2, 
                                algo = rep(all_algos[[1]], size)))
   
   df3 <- rbind(df3, data.frame(x = v1_M2, y = v2_M2, frame = rep(i, size), name = names,
-                               clust = kmeans(M1_, centers=i)$cluster, 
+                               clust = clusters3, 
                                algo = rep(all_algos[[1]], size)))
   
   df4 <- rbind(df4, data.frame(x = v1_M2, y = v2_M2, frame = rep(i, size), name = names,
-                               clust = kmeans(M2_, centers=i)$cluster, 
+                               clust = clusters4, 
                                algo = rep(all_algos[[1]], size)))
 }
 
-#dim 6450 6
 
 for(j in 2:n_algo){
   for(i in 1:k){
+    clusters1 = hcut(M1_, i, hc_method = algos[[j-1]][2], hc_metric= algos[[j-1]][1])$cluster
+    clusters2 = hcut(M2_, i, hc_method = algos[[j-1]][2], hc_metric= algos[[j-1]][1])$cluster
+    clusters3 = hcut(M1_, i, hc_method = algos[[j-1]][2], hc_metric= algos[[j-1]][1])$cluster
+    clusters4 = hcut(M2_, i, hc_method = algos[[j-1]][2], hc_metric= algos[[j-1]][1])$cluster
+    
+    if(ALIGN){
+      clusters2 <- align_clusters_in_space(clusters1, clusters2, reduced_M1_scaled)
+      clusters4 <- align_clusters_in_space(clusters3, clusters4, reduced_M2_scaled)
+    }
+    
     df1 <- rbind(df1, data.frame(x = v1_M1, y = v2_M1, frame = rep(i, size), name = names,
-                                 clust = hcut(M1_, i, hc_method = algos[[j-1]][2], hc_metric= algos[[j-1]][1])$cluster, 
+                                 clust = clusters1, 
                                  algo = rep(all_algos[[j]], size)))
     
     df2 <- rbind(df2, data.frame(x = v1_M1, y = v2_M1, frame = rep(i, size), name = names,
-                                 clust = hcut(M2_, i, hc_method = algos[[j-1]][2], hc_metric= algos[[j-1]][1])$cluster,
+                                 clust = clusters2,
                                  algo = rep(all_algos[[j]], size)))
     
     df3 <- rbind(df3, data.frame(x = v1_M2, y = v2_M2, frame = rep(i, size), name = names,
-                                 clust = hcut(M1_, i, hc_method = algos[[j-1]][2], hc_metric= algos[[j-1]][1])$cluster, 
+                                 clust = clusters3, 
                                  algo = rep(all_algos[[j]], size)))
     
     df4 <- rbind(df4, data.frame(x = v1_M2, y = v2_M2, frame = rep(i, size), name = names,
-                                 clust = hcut(M2_, i, hc_method = algos[[j-1]][2], hc_metric= algos[[j-1]][1])$cluster,
+                                 clust = clusters4,
                                  algo = rep(all_algos[[j]], size)))
     
     
@@ -286,6 +370,8 @@ fig2 <- plot_ly()
 fig3 <- plot_ly()
 fig4 <- plot_ly()
 
+
+
 for(alg in all_algos){
   # optimization
   VISIBLE = ifelse(alg=="kmeans", T, F)
@@ -293,13 +379,6 @@ for(alg in all_algos){
   df2_ <- df2[df2$algo == alg,]
   df3_ <- df3[df3$algo == alg,]
   df4_ <- df4[df4$algo == alg,]
-  #dubug
-  print(dim(df1_))
-  print(dim(df2_))
-  print(dim(df3_))
-  print(dim(df4_))
-  print(alg)
-  print(VISIBLE)
   
   fig1 <- fig1 %>% add_markers(
     data = df1_,
@@ -309,7 +388,7 @@ for(alg in all_algos){
     frame = ~frame,
     color = ~clust,
     marker =list(colorscale = 'Jet'),
-    #showlegend = F, 
+    showlegend = F, 
     visible = VISIBLE
   )
   fig2 <- fig2 %>% add_markers(
@@ -320,7 +399,7 @@ for(alg in all_algos){
     frame = ~frame,
     color = ~clust,
     marker =list(colorscale = 'Jet'),
-    #showlegend = F,
+    showlegend = F,
     visible = VISIBLE
   )
   fig3 <- fig3 %>% add_markers(
@@ -331,7 +410,7 @@ for(alg in all_algos){
     frame = ~frame,
     color = ~clust,
     marker =list(colorscale = 'Jet'),
-    #showlegend = F, 
+    showlegend = F, 
     visible = VISIBLE
   )
   fig4 <- fig4 %>% add_markers(
@@ -342,40 +421,20 @@ for(alg in all_algos){
     frame = ~frame,
     color = ~clust,
     marker =list(colorscale = 'Jet'),
-    #showlegend = F,
+    showlegend = F,
     visible = VISIBLE
   )
 }
 
+# add algorithm selection
+fig <- subplot(fig1, fig2, fig3, fig4, nrows = 2, which_layout = 0) 
 
-
-
-
-
+# We are showing 4 traces at once : you can see this "matrix" in the following way:
+# 4 square matrices with a diagonal "TRUE" separated by a column of "FALSE"
+# extra column of "FALSE" is added at the end
+# The columns of false is here to make everything coherent
 METHOD = "restyle"
 
-
-# We are showing 2 traces at once : you can see this "matrix" in the following way:
-# 2 square matrices with a diagonal "TRUE" separated by a column of "FALSE"
-# The column of false is here to make everything coherent
-BTN1 = list(  
-  list(method = METHOD, args = list(list(visible = c(T, F, F, F, F, F, F, F, F, F, F, T, F, F, F, F, F, F, F, F, F, F))), label = "kmeans"),
-  list(method = METHOD, args = list(list(visible = c(F, T, F, F, F, F, F, F, F, F, F, F, T, F, F, F, F, F, F, F, F, F))), label = "euclidian single"),       
-  list(method = METHOD, args = list(list(visible = c(F, F, T, F, F, F, F, F, F, F, F, F, F, T, F, F, F, F, F, F, F, F))), label = "euclidian average"),        
-  list(method = METHOD, args = list(list(visible = c(F, F, F, T, F, F, F, F, F, F, F, F, F, F, T, F, F, F, F, F, F, F))), label = "euclidian complete"),        
-  list(method = METHOD, args = list(list(visible = c(F, F, F, F, T, F, F, F, F, F, F, F, F, F, F, T, F, F, F, F, F, F))), label = "manhattan single"),        
-  list(method = METHOD, args = list(list(visible = c(F, F, F, F, F, T, F, F, F, F, F, F, F, F, F, F, T, F, F, F, F, F))), label = "manhattan average"),        
-  list(method = METHOD, args = list(list(visible = c(F, F, F, F, F, F, T, F, F, F, F, F, F, F, F, F, F, T, F, F, F, F))), label = "manhattan complete"),        
-  list(method = METHOD, args = list(list(visible = c(F, F, F, F, F, F, F, T, F, F, F, F, F, F, F, F, F, F, T, F, F, F))), label = "canberra single"),        
-  list(method = METHOD, args = list(list(visible = c(F, F, F, F, F, F, F, F, T, F, F, F, F, F, F, F, F, F, F, T, F, F))), label = "canberra average"),        
-  list(method = METHOD, args = list(list(visible = c(F, F, F, F, F, F, F, F, F, T, F, F, F, F, F, F, F, F, F, F, T, F))), label = "canberra complete")
-)
-
-# add algorithm selection
-
-fig <- subplot(fig1, fig2, fig3, fig4, nrows = 2) 
-
-# this is just a draft for now 
 BTN2 = list(  
   list(method = METHOD, args = list(list(visible = c(T, F, F, F, F, F, F, F, F, F, F, T, F, F, F, F, F, F, F, F, F, F, T, F, F, F, F, F, F, F, F, F, F, T, F, F, F, F, F, F, F, F, F, F))), label = "kmeans"),
   list(method = METHOD, args = list(list(visible = c(F, T, F, F, F, F, F, F, F, F, F, F, T, F, F, F, F, F, F, F, F, F, F, T, F, F, F, F, F, F, F, F, F, F, T, F, F, F, F, F, F, F, F, F))), label = "euclidian single"),       
@@ -391,22 +450,21 @@ BTN2 = list(
 
 
 
-fig <- fig %>% animation_opts(0, easing = "elastic", redraw = F) 
-fig <- fig %>% layout(
-  title = "Comparing clustering Algo between the 2 datasets",
-  xaxis = list(title = "PCA Axis 1"),
-  yaxis = list(title = "PCA Axis 2"),
-  updatemenus = list(
-    list(
-      y = 0.8,
-      active = 0,
-      type= 'buttons',
-      buttons = BTN2
-    )
-  )
-) 
-
-
+fig <- fig %>% animation_opts(1000, easing = "elastic", redraw = F) 
+fig <- fig %>% layout(title = "Comparing clustering Algo between the 2 datasets",
+                      updatemenus = list(list(y = 0.8, active = 0, type= 'buttons', buttons = BTN2)))
+fig <- fig %>% layout(plot_bgcolor='#ddd',
+                      xaxis  = list(zeroline = F, showgrid = F, showticklabels=FALSE),
+                      xaxis2 = list(zeroline = F, showgrid = F, showticklabels=FALSE),
+                      xaxis3 = list(zeroline = F, showgrid = F, showticklabels=FALSE),
+                      xaxis4 = list(zeroline = F, showgrid = F, showticklabels=FALSE),
+                      yaxis  = list(zeroline = F, showgrid = F, showticklabels=FALSE),
+                      yaxis2 = list(zeroline = F, showgrid = F, showticklabels=FALSE),
+                      yaxis3 = list(zeroline = F, showgrid = F, showticklabels=FALSE),
+                      yaxis4 = list(zeroline = F, showgrid = F, showticklabels=FALSE),
+                      showlegend = F)
+                        
+# doesn't work
 #fig %>% hide_colorbar()
 
 # add javascript because plotly is an undocumented glitchy sesspool
@@ -417,6 +475,25 @@ fig
 
 
 saveWidget(fig, "output/aygalic/CLUSTERING_COMPARAISON.html", selfcontained = F, libdir = "lib")
+
+#############################################
+#############################################
+###### ONE LAST PLOT I WANT TO DO HERE ######
+#############################################
+#############################################
+# I want to do just like the first plot where
+# i compare all the clustering algo but this
+# time i compare them to the primary tissue
+# 
+# So we will endup with two tables, one from
+# the RPKM dataset, another one from the AUC
+# dataset.
+#############################################
+#############################################
+#############################################
+
+
+
 
 
 
