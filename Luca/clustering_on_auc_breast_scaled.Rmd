@@ -75,7 +75,6 @@ fig
 ```
 
 ```{r}
-breast_auc = na.aggregate(breast_auc)
 treatment_means = apply(breast_auc,2,mean)
 plot(sort(treatment_means), type ="l")
 #temp = treatment_means>0.98
@@ -118,8 +117,6 @@ plot(cell_means, col=groups_c+1)
 ## PCA
 
 ```{r non scaled}
-#data_5 = scale(breast_auc)
-data_5 = breast_auc
 cov2 = cov(data_5)
 decomp2 = eigen(cov2)
 #barplot(decomp2$values[1:50]/sum(decomp2$values), ylim = c(0,1))
@@ -151,6 +148,7 @@ plot_ly(data = data_plot, x = ~v1, y = ~v2, z = ~v3,
 plot_ly(data = data_plot, x = ~v1, y = ~v2, z = ~v3,
         color = ~groups_c) %>% layout(title = 'Non Scaled PCA by  AUC-means-based groups')
 ```
+
 ```{r}
 fig <- plot_ly(
     #x = colnames(decomp2), y = rownames(decomp2$vectors),
@@ -186,6 +184,7 @@ library(car)
 # we choose the Euclidean metric (and then we look at other metrics)
 
 #help(dist)
+data_5 <- scale(data_5)
 d.e <- dist(data_5, method='euclidean')
 
 image(1:44,1:44,as.matrix(d.e), main='metrics: Euclidean', asp=1, xlab='i', ylab='j')
@@ -216,8 +215,7 @@ Le matrici sembrano simili, da cui ipotizziamo che cambiare la distanza non port
 d.es <- hclust(d.e, method='single')
 d.ea <- hclust(d.e, method='average')
 d.ec <- hclust(d.e, method='complete')
-
-ward <- hclust(d.e, method='ward.D2')
+d.ew <- hclust(d.e, method='ward.D2')
 
 # plot of the dendrograms
 ##xquartz()
@@ -230,7 +228,7 @@ plot(d.ea, main='euclidean-average', hang=-0.1, xlab='', labels=F, cex=0.6, sub=
 ##xquartz()
 par(mfrow=c(1,3))
 plot(d.es, main='euclidean-single', hang=-0.1, xlab='', labels=F, cex=0.6, sub='')
-rect.hclust(d.es, k=2)
+rect.hclust(d.es, k=3)
 plot(d.ec, main='euclidean-complete', hang=-0.1, xlab='', labels=F, cex=0.6, sub='')
 rect.hclust(d.ec, k=3)
 plot(d.ea, main='euclidean-average', hang=-0.1, xlab='', labels=F, cex=0.6, sub='')
@@ -244,7 +242,7 @@ rect.hclust(d.ea, k=3)
 
 # Fix k=2 clusters:
 
-cluster.es <- cutree(d.es, k=2) # euclidean-single
+cluster.es <- cutree(d.es, k=3) # euclidean-single
 data_plot$cluster.es = cluster.es
 
 cluster.ec <- cutree(d.ec, k=3) # euclidean-complete:
@@ -253,10 +251,10 @@ data_plot$cluster.ec = cluster.ec
 cluster.ea <- cutree(d.ea, k=3) # euclidean-average
 data_plot$cluster.ea = cluster.ea
 
-cluster.ew <- cutree(ward, k=4) #ward divide il gruppo grosso in 2
+cluster.ew <- cutree(d.ew, k=4) #ward divide il gruppo grosso in 2
 data_plot$cluster.ew = cluster.ew
 
-cluster.ew_3 <- cutree(ward, k=3) #ward divide il gruppo grosso in 2
+cluster.ew_3 <- cutree(d.ew, k=3) #ward divide il gruppo grosso in 2
 data_plot$cluster.ew = cluster.ew_3
 ```
 
@@ -338,7 +336,7 @@ c("Eucl-Single"=es,"Eucl-Compl."=ec,"Eucl-Ave."=ea, "Ward"=ew )
 
 AVERAGE 4 IS THE ONE RETAINED
 
-```{r eval=FALSE, include=FALSE}
+```{r}
 data_p = data.frame(data_5)
 row.names(data_p)=row.names(data_5)
 data_p$class = as.factor(cluster.ec)
@@ -401,7 +399,7 @@ plot_ly(data = data_plot, x = ~v1, y = ~v2, z = ~v3,
 ```
 
 
-```{r eval=FALSE, include=FALSE}
+```{r}
 
 pairs(data_5 , col=cluster.cs+1, asp=1, pch=16, lwd=2)
 pairs(data_5 , col=cluster.cc+1, asp=1, pch=16, lwd=2)
@@ -448,16 +446,16 @@ rgl.snapshot(filename = name)
 ```
 
 ```{r camperra cophenetic}
-coph.cs <- cophenetic(d.cs)
-coph.cc <- cophenetic(d.cc)
-coph.ca <- cophenetic(d.ca)
+coph.cs <- cophenetic(d.es)
+coph.cc <- cophenetic(d.ec)
+coph.ca <- cophenetic(d.ea)
 coph.cw <- cophenetic(d.cw)
 
 layout(rbind(c(0,1,0,0),c(2,3,4,5)))
 image(as.matrix(d.e), main='camperra', asp=1 )
-image(as.matrix(coph.cs), main='Single', asp=1 )
-image(as.matrix(coph.cc), main='Complete', asp=1 )
-image(as.matrix(coph.ca), main='Average', asp=1 )
+image(as.matrix(coph.es), main='Single', asp=1 )
+image(as.matrix(coph.ec), main='Complete', asp=1 )
+image(as.matrix(coph.ea), main='Average', asp=1 )
 image(as.matrix(coph.cw), main='Ward', asp=1 )
 
 # compute cophenetic coefficients
@@ -489,7 +487,7 @@ par(mfrow=c(1,3))
 plot(d.ms, main='manhattan-single', hang=-0.1, xlab='', labels=F, cex=0.6, sub='')
 rect.hclust(d.ms, k=3)
 plot(d.mc, main='manhattan-complete', hang=-0.1, xlab='', labels=F, cex=0.6, sub='')
-rect.hclust(d.mc, k=3)
+rect.hclust(d.mc, k=4)
 plot(d.ma, main='manhattan-average', hang=-0.1, xlab='', labels=F, cex=0.6, sub='')
 rect.hclust(d.ma, k=3)
 
@@ -500,17 +498,12 @@ rect.hclust(d.ma, k=3)
 #help(cutree)
 
 # Fix k=2 clusters:
-cluster.mc <- cutree(d.mc, k=3) # manhattan-complete
-data_plot
+cluster.mc <- cutree(d.mc, k=3) # manhattan-complete #should be 2
+
 cluster.ms <- cutree(d.ms, k=3) # manhattan-single
 cluster.ma <- cutree(d.ma, k=3) # manhattan-average
+
 cluster.mw <- cutree(d.mw, k=3) #ward divide il gruppo grosso in 2
-
-data_plot$cluster.mc = cluster.mc
-data_plot$cluster.ms = cluster.ms
-data_plot$cluster.ma = cluster.ma
-data_plot$cluster.mw = cluster.mw
-
 ```
 
 ```{r plot_manhattan}
@@ -596,15 +589,14 @@ fviz_nbclust(data_5, FUN = kmeans, method = "wss")
 
 # experimenting with the number of clusters
 result.k <- kmeans(data_5, centers=3) # Centers: fixed number of clusters
-data_plot$cluster.km_3 = result.k$cluster
 
-#open3d(windowRect=c(100,100,1000,1000))
-#plot3d(data_5, size=3, col=result.k$cluster +1, aspect = F, xlab="AVA", ylab= 
-#           "BIC", zlab="LIN") 
-# title = "K-means cluster (4)"
-# title3d(title)
-# axes3d()
-# rgl.snapshot(filename = "auc_4_means.png")
+open3d(windowRect=c(100,100,1000,1000))
+plot3d(data_5, size=3, col=result.k$cluster +1, aspect = F, xlab="AVA", ylab= 
+          "BIC", zlab="LIN") 
+title = "K-means cluster (4)"
+title3d(title)
+axes3d()
+rgl.snapshot(filename = "auc_4_means.png")
 ```
 
 ```{r}
