@@ -11,8 +11,9 @@ library(shiny)
 library(factoextra)
 
 ### LOAD DATA
-setwd("/Users/lucamainini/Documents/GitHub/AS_Project_2022")
-load(file.path("Dataset","breast_auc_data.Rdata"))
+#setwd("/Users/lucamainini/Documents/GitHub/AS_Project_2022")
+#load(file.path("Dataset","breast_auc_data.Rdata"))
+load("breast_auc_data.Rdata")
 breast_auc = t(breast_data_treatment_auc)
 data_5 = na.aggregate(breast_auc)
 
