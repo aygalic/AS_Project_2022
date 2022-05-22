@@ -191,15 +191,15 @@ align_clusters_in_space <- function(clusters1, clusters2, projected_obs){
     # find centroid of each cluster for the first dataset
     data <- projected_obs[clusters1==i,]
     centroid1 <- rapply(data, mean)
-
+    
     # find the matching centroid
     # start with clust 1 ofc
     k = 1
     centroid2 <- rapply(projected_obs[clusters2==k,], mean)
     # compute the original distance
     d = dist(rbind(centroid1, centroid2))
-
-  
+    
+    
     for(j in 2:n_clusters){
       centroid2_ <- rapply(projected_obs[clusters2==j,], mean)
       # compute the distance bewteen current centroids
@@ -215,7 +215,9 @@ align_clusters_in_space <- function(clusters1, clusters2, projected_obs){
   }
   return (new_clusters)
 }
-  
+
+
+
 
 # testing this function :
 reduced_M1_scaled <- create_reduced_mat(M1_)
@@ -306,6 +308,12 @@ for(i in 1:k){
   clusters3 = kmeans(M1_, centers=i)$cluster
   clusters4 = kmeans(M2_, centers=i)$cluster
   
+  # make them chars
+  #clusters1 <- as.character(clusters1)
+  #clusters2 <- as.character(clusters2)
+  #clusters3 <- as.character(clusters3)
+  #clusters4 <- as.character(clusters4)
+  
   if(ALIGN){
     clusters2 <- align_clusters_in_space(clusters1, clusters2, reduced_M1_scaled)
     clusters4 <- align_clusters_in_space(clusters3, clusters4, reduced_M2_scaled)
@@ -335,6 +343,12 @@ for(j in 2:n_algo){
     clusters2 = hcut(M2_, i, hc_method = algos[[j-1]][2], hc_metric= algos[[j-1]][1])$cluster
     clusters3 = hcut(M1_, i, hc_method = algos[[j-1]][2], hc_metric= algos[[j-1]][1])$cluster
     clusters4 = hcut(M2_, i, hc_method = algos[[j-1]][2], hc_metric= algos[[j-1]][1])$cluster
+    
+    # make them chars
+    #clusters1 <- as.character(clusters1)
+    #clusters2 <- as.character(clusters2)
+    #clusters3 <- as.character(clusters3)
+    #clusters4 <- as.character(clusters4)
     
     if(ALIGN){
       clusters2 <- align_clusters_in_space(clusters1, clusters2, reduced_M1_scaled)
@@ -433,7 +447,7 @@ fig <- subplot(fig1, fig2, fig3, fig4, nrows = 2, which_layout = 0)
 # 4 square matrices with a diagonal "TRUE" separated by a column of "FALSE"
 # extra column of "FALSE" is added at the end
 # The columns of false is here to make everything coherent
-METHOD = "restyle"
+METHOD = "restlye"
 
 BTN2 = list(  
   list(method = METHOD, args = list(list(visible = c(T, F, F, F, F, F, F, F, F, F, F, T, F, F, F, F, F, F, F, F, F, F, T, F, F, F, F, F, F, F, F, F, F, T, F, F, F, F, F, F, F, F, F, F))), label = "kmeans"),
@@ -469,7 +483,7 @@ fig <- fig %>% layout(plot_bgcolor='#ddd',
 
 # add javascript because plotly is an undocumented glitchy sesspool
 # fig %>% onRender("")
-  
+
 fig
 
 
@@ -492,8 +506,122 @@ saveWidget(fig, "output/aygalic/CLUSTERING_COMPARAISON.html", selfcontained = F,
 #############################################
 #############################################
 
+primitive_types <- str_split(names, '_', n = 2, simplify = TRUE)[,2]
+
+k=10
+result.AUC <- kmeans(M1, centers=k)$cluster[indexes1]
+result.rpkm <- kmeans(M2, centers=k)$cluster[indexes2]
+
+rownames(primitive_types) <- rownames(result.AUC) 
+
+
+result1 <- table(result.AUC, primitive_types)
+result2 <- table(result.rpkm, primitive_types)
+
+result1
+fig1 <- plot_ly(z = result1, type = "heatmap")
+fig2 <- plot_ly(z = result2, type = "heatmap")
+fig <- subplot(fig1, fig2)
+fig
+
+saveWidget(fig, "output/aygalic/clutsers_primitive_comparaison.html", selfcontained = F, libdir = "lib")
+
+
+
+# i lied i'm not done
+
+# second try at this
+# ONLY WORKS IN R^2 FOR NOW
+align_clusters_in_space2 <- function(clusters1, clusters2, projected_obs){
+  n_clusters <- max(clusters1)
+  if(n_clusters<2) return(clusters2)
+  
+  centroids1 <- data.frame(x=list(), y=list())
+  centroids2 <- data.frame(x=list(), y=list())
+  
+
+  
+  for(i in 1:n_clusters){
+    data <- projected_obs[clusters1==i,]
+    mu = rapply(data, mean)
+    centroids1[i, 1] <- mu[1]
+    centroids1[i, 2] <- mu[2]
+  }
+  for(i in 1:n_clusters){
+    data <- projected_obs[clusters2==i,]
+    mu = rapply(data, mean)
+    centroids2[i, 1] <- mu[1]
+    centroids2[i, 2] <- mu[2]  
+  }
+  colnames(centroids1) <- c("x","y")
+  colnames(centroids2) <- c("x","y")
+  
+  # we want to "align" the centroids
+  # Let's first compute the distance 
+  f_dist <- function(a, b){
+    return(sqrt(((a$x - b$x)^2)+(a$y - b$y)^2))
+  } 
+    
+  dist.e = data.frame()
+  for(i in 1:n_clusters){
+    for(j in 1:n_clusters){
+      dist.e[i,j] = f_dist(centroids1[i,], centroids2[j,])
+    }
+  }
+  
+  # let's now do the ranking and ordering
+  order = rapply(dist.e, which.min)
+  
+  new_clust <- as.factor(clusters1)
+  levels(new_clust) <- order
+  
+  
+  
+  return(list(centroids1_before = centroids1, 
+              centroids2_before = centroids2, 
+              dist = dist.e, 
+              order = order, 
+              #new_centroid = new_centroid,
+              new_clusters = new_clust ))
+}
+
+
+k=3
+c1 <- kmeans(M1, centers=k)$cluster[indexes1]
+c2 <- kmeans(M2, centers=k)$cluster[indexes2]
 
 
 
 
 
+
+test <- align_clusters_in_space2(c1, c2, reduced_M2_scaled)
+test
+
+as.factor(c1)==test$new_clusters
+
+
+plot(reduced_M2_scaled, col = c1, pch = 20, lwd = 0)
+
+points(test$centroids1_before, col = "blue", pch=3, lwd = 5)
+points(test$centroids2_before, col = "yellow", pch=3, lwd = 5)
+
+points(test$centroids1_before[1,], col = "green", pch=3, lwd = 5)
+points(test$centroids2_before[1,], col = "green", pch=3, lwd = 5)
+
+
+
+
+
+plot(test)
+
+c2 <- align_clusters_in_space(c1, c2, reduced_M2_scaled)
+
+resulttable <- table(c1, c2)
+resulttable
+plot_ly(z = resulttable, type = "heatmap")
+
+
+table(result.rpkm, result.AUC)
+
+plot_ly(z = table(result.rpkm, result.AUC), type = "heatmap")
