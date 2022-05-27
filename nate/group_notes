@@ -1,0 +1,46 @@
+Aygalic:
+0_PREPROCESS
+  * did we ever figure out why there were duplicates in the rpkm dataset?
+  * whats the logic for removing low variance genes? counter argument: low variance 
+    could be an indicator of a common expression of a cancer-causing mutation
+  - line 25 normalizes samples (found on columns)
+  - line 29 takes variance across rows 
+  * how was 0.5 chosen as a threshold?
+  - keeps high variance genes 
+  
+utilities.r
+  * line 64: sums rows before normalizing, wasnt there a consideration we needed where certain 
+    genes already had more expression initially which we need to account for? Ask pinoli again
+  - line 55 + 57 already implicitly assumes we've removed duplicates.
+  - default matrix loaded in this script is the non-duplicate, row-normalized, high-variance rpkm 
+    generated in 0_PREPROCESS
+    
+  *[CONCERNING]* i dont think we should preprocess auc on the basis of removing NA's until an arbitrary threshold
+      is met.  dataset should be querried and then processed when you have an application in mind 
+      
+  * utility for PCA could be reduced to two lines; princomp -> $scores[,ndim] and this is more coherent 
+      
+2_CELLS_CLUSTERING.R
+  - yo results arent reproducible since dataset you generated at start isnt in the datasets folder, maybe add that 
+  *[CONCERNING]* ALSO ALL RESULTS SEEM TO BE BASED ON ARBITRARY PREPROCESSING OF RPKM DATA
+      - easy fix is to replace reference matrix whenever we want to perform an analysis 
+  - 40: from preprocess you've normalized -> removed low var genes -> normalized again (???)
+  * 56: not every possible tree is produced, e.g. ward.d2 method for clustering
+  
+2_GENES_CLUSTERING.R
+  
+workflow:
+i) 1_rpkm.txt is new rpkm (0_PREPROCESS) 
+ii) utilities defined reference this modified dataset as default param
+
+
+list of assumptions:
+RPKM 
+- only keep high var genes 
+- remove duplicates
+- statistical samples are cells and they are normalized w.r.t gene expression 
+
+
+
+IMPORTANT QUESTIONS:
+- are the results you obtained derived from using the preprocessed rpkm dataset which inlcudes only high var, normalizes and no duplicates; and the auc one which is reduced to oblivion to meet a NA threshold?

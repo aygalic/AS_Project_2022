@@ -11,6 +11,7 @@ library(car)
 library(factoextra)
 
 library(htmlwidgets) # saving plot_ly graph
+library("tidyverse")
 
 
 
