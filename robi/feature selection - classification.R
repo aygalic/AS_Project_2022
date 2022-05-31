@@ -1,7 +1,7 @@
-breast_rpkm_data = read.delim(file.path("Dataset", "1_rpkm.txt"), header = TRUE, comment.char = '#')
+breast_rpkm_data = read.delim(file.path("Dataset", "2_rpkm.txt"), header = TRUE, comment.char = '#')
 breast_rpkm_data = t(breast_rpkm_data)
-colnames(breast_rpkm_data) = breast_rpkm_data[1,]
-breast_rpkm_data = breast_rpkm_data[-1,]
+#colnames(breast_rpkm_data) = breast_rpkm_data[1,]
+#breast_rpkm_data = breast_rpkm_data[-1,]
 
 source("src/utilities.R")
 source("robi/analysis_robi.rmd")
@@ -24,9 +24,8 @@ for(i in 1:142)
 sum(is.na(breast_auc_data))
 #no more NAs in the dataframe
 
-#transpose to have cells as rows
+#transpose to get cell lines in the rows
 breast_auc_data = t(breast_auc_data)
-
 
 M1 = as.matrix(breast_auc_data)
 M2 = as.matrix(breast_rpkm_data)
@@ -42,6 +41,7 @@ M2_ <- M2[indexes2,]
 dim(M2_)
 
 result.k <- kmeans(M1_, centers=3)
+
 reduced_M1_scaled = create_reduced_mat(M1_,2)
 
 x11()
@@ -54,4 +54,5 @@ true_labels <- result.k$cluster
 label_1 = which(true_labels == 1)
 label_2 = which(true_labels == 2)
 label_3 = which(true_labels == 3)
+
 
