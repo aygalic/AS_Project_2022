@@ -14,11 +14,11 @@ selected_cells = na.omit(selected_cells) # I get 57 values
 #selected_cells = as.character(na.omit(selected_cells)) #57 values
 selected_cells 
 
-for (i in 1:57){
-  print(paste0("Looking for ", selected_cells[i]) )
-  reduced_dataset = data_treatment_auc[selected_cells[i]]
-  reduced_dataset
-} 
+#for (i in 1:57){
+#  print(paste0("Looking for ", selected_cells[i]) )
+#  reduced_dataset = data_treatment_auc[selected_cells[i]]
+#  reduced_dataset
+#} 
 #I get an error because not all the 57 cell lines about breast cancer have been studied in vitro, only 45.
 
 indexes = match(selected_cells, colnames(data_treatment_auc))
