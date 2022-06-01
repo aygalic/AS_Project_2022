@@ -36,8 +36,15 @@ reduced_ids<-reduced_mrna_ids
 auc <-data_treatment_auc[,c(reduced_ids)]
 rownames(auc)<-data_treatment_auc$ENTITY_STABLE_ID
 
+#RPKM considerations
+library(dplyr)
 rpkm <-data_rpkm[,c(reduced_ids)]
-hugo<-data_rpkm$Hugo_Symbol
+rpkm$Hugo_Symbol<-data_rpkm$Hugo_Symbol
+rpkm = rpkm[!duplicated(rpkm$Hugo_Symbol),]
+
+#now rewrite rownames and remove the duplicate hugo symbol
+rownames(rpkm) = rpkm$Hugo_Symbol
+rpkm = rpkm[,!(colnames(rpkm)%in%"Hugo_Symbol")]
 
 #----------------------------------------------------------------------------------------------
 

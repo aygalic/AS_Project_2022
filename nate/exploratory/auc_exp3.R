@@ -1,5 +1,7 @@
-source("./utils/nate_utils.R")
-source("./utils/exp_base_script.R")
+#attempt at clustering drugs for a specific cancer type
+
+source("../utils/nate_utils.R")
+source("../utils/exp_base_script.R")
 
 cancer.data<-block_dat("CENTRAL_NERVOUS_SYSTEM", auc)
 
