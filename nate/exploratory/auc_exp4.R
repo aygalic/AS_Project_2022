@@ -93,14 +93,23 @@ table(metric.reduced)
 #-------------------------------------------------------------------------------
 #Now let's do the same type of thing with fewer treatments 
 cancer2.data = block_dat(cancers, auc)
-na_rows = sort(rowSums(is.na(cancer2.data)), decreasing=TRUE)
+na_rows = sort(rowSums(is.na(cancer2.data)), decreasing=FALSE)
 
 #we can choose to reduce num rows such that ratio of nas to sample size is larger than 50%
 num_samples = dim(cancer2.data)[2]
-drugs_kept = names(which(na_rows/num_samples <0.5))
+#drugs_kept = names(which(na_rows/num_samples <0.5))
+drugs_kept = names(na_rows[1:143])
+
 
 #reduce 
 cancer2.data = cancer2.data[drugs_kept, ]
+sum(is.na(cancer2.data))/dim(cancer2.data)[1]/dim(cancer2.data)[2]
+
+na_cols = sort(colSums(is.na(cancer2.data)), decreasing=FALSE)
+cells_kept = names(na_cols[1:79])
+cancer2.data = cancer2.data[,cells_kept ]
+
+sum(is.na(cancer2.data))/dim(cancer2.data)[1]/dim(cancer2.data)[2]
 
 #go through the clustering once again 
 cancer2.data = na.aggregate(cancer2.data)
@@ -123,7 +132,7 @@ cluster2.ec <- cutree(cancer2.hclust, k=2)
 #now get `real` labels and colour maps
 labels2.real = str_util(rownames(cancer2.data))
 reference_map2 = ifelse(labels2.real == "BREAST", 'red', 'blue')
-cluster_map2 = ifelse(cluster2.ec==1,'red','blue')
+cluster_map2 = ifelse(cluster2.ec==1,'blue','red')
 
 x11()
 par(mfrow=c(1,2))

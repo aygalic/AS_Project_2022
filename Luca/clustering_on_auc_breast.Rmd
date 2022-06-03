@@ -588,6 +588,8 @@ c("Mahn-Single"=es,"Mahn-Compl."=ec,"Mahn-Ave."=ea, "MahnWard"=ew )
 
 ```{r}
 #result.k <- kmeans(data_5, centers=3) # Centers: fixed number of clusters
+breast_auc = t(breast_data_treatment_auc)
+data_5 = na.aggregate(breast_auc)
 
 library(factoextra)
 fviz_nbclust(data_5, FUN = kmeans, method = "silhouette") 

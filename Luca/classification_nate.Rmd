@@ -1,0 +1,284 @@
+---
+title: "Classification"
+author: "Luca"
+date: '2022-05-30'
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = '/Users/lucamainini/Documents/GitHub/AS_Project_2022')
+library("zoo")
+library(mvtnorm)
+library(rgl)
+library(car)
+library(plotly)
+library(shiny)
+library(factoextra)
+```
+
+```{r functions}
+#import nate's and luca's function
+source(file.path("nate", "utils", "nate_utils.R"))
+source(file.path("Luca", "luca_utils.R"))
+```
+
+```{r import data, eval=FALSE, include=FALSE}
+#path="/Users/lucamainini/Documents/GitHub/AS_Project_2022/Dataset"
+path="Dataset"
+result <- import_dataset(path)
+auc=result$auc
+rpkm=result$rpkm
+rm(result)
+```
+
+```{r}
+#extract whatever cancer_types
+cancers = c("CENTRAL_NERVOUS_SYSTEM", "BREAST")
+data.rpkm = block_dat(cancers, rpkm)
+
+#auc if ya want 
+data.auc = block_dat(cancers, auc)
+
+#colnames(data.rpkm) == colnames(data.auc)
+```
+
+##  APPLLY CLUSTERs
+
+You can also embed plots, for example:
+```{r}
+cancer2.data = block_dat(cancers, auc)
+na_rows = sort(rowSums(is.na(cancer2.data)), decreasing=FALSE)
+
+#we can choose to reduce num rows such that ratio of nas to sample size is larger than 50%
+num_samples = dim(cancer2.data)[2]
+#drugs_kept = names(which(na_rows/num_samples <0.5))
+drugs_kept = names(na_rows[1:143])
+
+
+#reduce 
+cancer2.data = cancer2.data[drugs_kept, ]
+sum(is.na(cancer2.data))/dim(cancer2.data)[1]/dim(cancer2.data)[2]
+
+na_cols = sort(colSums(is.na(cancer2.data)), decreasing=FALSE)
+cells_kept = names(na_cols[1:79])
+cancer2.data = cancer2.data[,cells_kept ]
+
+sum(is.na(cancer2.data))/dim(cancer2.data)[1]/dim(cancer2.data)[2]
+
+#go through the clustering once again 
+cancer2.data = na.aggregate(cancer2.data)
+cancer2.data = t(cancer2.data)
+
+### PCA
+cancer2.cov = cov(cancer2.data)
+cancer2.eigen = eigen(cancer2.cov)
+scores2 = cancer2.data%*%cancer2.eigen$vectors
+
+#clustering on un-projected
+cancer2.dist = dist(cancer2.data, method="euclidean")
+cancer2.hclust = hclust(cancer2.dist, method = "complete")
+
+x11()
+plot(cancer2.hclust)
+
+cluster2.ec <- cutree(cancer2.hclust, k=2) 
+
+#now get `real` labels and colour maps
+labels2.real = str_util(rownames(cancer2.data))
+reference_map2 = ifelse(labels2.real == "BREAST", 'red', 'blue')
+cluster_map2 = ifelse(cluster2.ec==1,'blue','red')
+
+x11()
+par(mfrow=c(1,2))
+plot(scores2[,1], scores2[,2], col=cluster_map2, pch=16, asp=1, main="hierarchical clustering", lwd=2)
+plot(scores2[,1], scores2[,2], col=reference_map2, pch=16, asp=1, main="real labels", lwd=2)
+
+metric2 = data.frame(cancer = labels2.real, label = cluster2.ec)
+table(metric2)
+```
+
+
+```{r k-means}
+#import cluster2.ec
+group = as.factor(cluster2.ec-1)
+```
+
+
+```{r}
+load("/Users/lucamainini/Documents/GitHub/AS_Project_2022/Dataset/breast_data_RPKM.Rdata")
+hugo_symbols = to_return_2$hugo_symbol
+# PROBLEM 2: Removing lines with low variance
+# To select the feature for our cluster analysis, we need first to reduce the number of genes considered.
+# We first decide to select the genes with highest variability between the different cell lines
+# This approach is motivated by the fact that if there is no variability between the different observations, cluster won't be possible
+data_expression_clean = data.rpkm
+data_expression_clean$hugo_symbol = hugo_symbols
+
+# we first create a separated matrix of normalized data (remove influence of patient)
+M <- scale(data.rpkm) 
+
+threshold_l <- 1
+threshold_h <- 100 
+
+row_var = apply(M, 1, var) #apply over rows: variability along the genes
+plot((row_var))
+abline(h=threshold_l, col='red')
+abline(h=threshold_h, col='red')
+
+sum(row_var > threshold_l & row_var < threshold_h)
+plot(row_var[row_var > threshold_l & row_var < threshold_h])
+
+data_exp_var <- data_expression_clean[row_var > threshold_l & row_var < threshold_h,]
+data_exp_var <- data_expression_clean[row_var > threshold_l,]
+
+plot(row_var[row_var > threshold_l & row_var < threshold_h])
+
+M1 <- data.rpkm[order(row_var),]
+apply(M1, 1, var)
+```
+
+```{r} 
+hugo_symbols = data_exp_var$hugo_symbol
+cell_indices = match(rownames(cancer2.data),colnames(data_exp_var[-82]))
+data_temp = data_exp_var[,cell_indices]
+#data_rpkm$hugo_symbol = to_return_2$hugo_symbols
+#str(data_rpkm)
+```
+
+```{r}
+data_expression <- t(data_temp)
+data_expression <- data.frame(data_expression)
+colnames(data_expression) = hugo_symbols
+```
+
+
+```{r}
+source("/Users/lucamainini/Library/CloudStorage/OneDrive-PolitecnicodiMilano/Applied Statistics/Exam notebook/functions.R") ##for mcshapiro.test
+# question a)
+
+# normality (multivariate) within the groups
+mcshapiro.test(data_expression[A,])
+mcshapiro.test(data_expression[B,])
+mcshapiro.test(data_expression[C,])
+
+```
+
+```{r}
+library(MASS)
+lda.fit <- lda(cluster2.ec ~ ., data = data_expression)
+lda.fit
+plot(lda.fit)
+#plot(data_plot$v1, data_plot$v2)
+#text(data_plot$v1, data_plot$v2, labels =group)
+```
+
+```{r}
+library("dplyr")
+library("faux")
+library("DataExplorer")
+library("caret")
+library("randomForest")
+```
+
+```{r}
+control <- rfeControl(functions = rfFuncs, # random forest
+                      method = "repeatedcv", # repeated cv
+                      repeats = 5, # number of repeats
+                      #number = 10 # number of folds
+)
+                      
+```
+
+```{r}
+
+# Features
+x <- data_expression 
+
+# Target variable
+y <- group
+
+# Training: 80%; Test: 20%
+set.seed(2021)
+inTrain <- createDataPartition(y, p = .80, list = FALSE)[,1]
+
+x_train <- x[ inTrain, ]
+x_test  <- x[-inTrain, ]
+
+y_train <- y[ inTrain]
+y_test  <- y[-inTrain]
+```
+
+```{r}
+# Run RFE
+result_rfe1 <- rfe(x = x_train, 
+                   y = y_train, 
+                   sizes = c(1:60),
+                   rfeControl = control)
+
+# Print the results
+result_rfe1
+result_rfe1$fit
+head(result_rfe1$resample)
+
+
+# Print the selected features
+good_genes <- predictors(result_rfe1)
+
+# Print the results visually
+#ggplot(data = result_rfe1, metric = "Accuracy") + theme_bw()
+#ggplot(data = result_rfe1, metric = "Kappa") + theme_bw()
+```
+
+```{r}
+trellis.par.set(caretTheme())
+plot(result_rfe1, type = c("g", "o"))
+```
+```{r}
+rfRFE <-  list(summary = defaultSummary,
+               fit = function(x, y, first, last, ...){
+                 library(randomForest)
+                 randomForest(x, y, importance = first, ...)
+                 },
+               pred = function(object, x)  predict(object, x),
+               rank = function(object, x, y) {
+                 vimp <- varImp(object)
+                 vimp <- vimp[order(vimp$Overall,decreasing = TRUE),,drop = FALSE]
+                 vimp$var <- rownames(vimp)                  
+                 vimp
+                 },
+               selectSize = pickSizeBest,
+               selectVar = pickVars)
+
+
+ctrl <- rfeControl(functions = rfRFE, # random forest
+                      method = "repeatedcv", # repeated cv
+                      repeats = 5, # number of repeats
+                      #number = 10 # number of folds
+)
+result_rfe2 <- rfe(x = x_train, 
+                   y = y_train, 
+                   sizes = c(1:60),
+                   rfeControl = control)
+```
+
+
+```{r}
+varimp_data <- data.frame(feature = row.names(varImp(result_rfe1))[1:8],
+                          importance = varImp(result_rfe1)[1:8, 1])
+
+ggplot(data = varimp_data, 
+       aes(x = reorder(feature, -importance), y = importance, fill = feature)) +
+  geom_bar(stat="identity") + labs(x = "Features", y = "Variable Importance") + 
+  geom_text(aes(label = round(importance, 2)), vjust=1.6, color="white", size=4) + 
+  theme_bw() + theme(legend.position = "none")
+```
+
+We can also check the model performance using the test dataset. 
+
+```{r}
+postResample(predict(result_rfe1, x_test), y_test)
+```
+
