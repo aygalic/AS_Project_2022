@@ -81,7 +81,7 @@ scores2 = cancer2.data%*%cancer2.eigen$vectors
 cancer2.dist = dist(cancer2.data, method="euclidean")
 cancer2.hclust = hclust(cancer2.dist, method = "complete")
 
-x11()
+#x11()
 plot(cancer2.hclust)
 
 cluster2.ec <- cutree(cancer2.hclust, k=2) 
@@ -91,7 +91,7 @@ labels2.real = str_util(rownames(cancer2.data))
 reference_map2 = ifelse(labels2.real == "BREAST", 'red', 'blue')
 cluster_map2 = ifelse(cluster2.ec==1,'blue','red')
 
-x11()
+#x11()
 par(mfrow=c(1,2))
 plot(scores2[,1], scores2[,2], col=cluster_map2, pch=16, asp=1, main="hierarchical clustering", lwd=2)
 plot(scores2[,1], scores2[,2], col=reference_map2, pch=16, asp=1, main="real labels", lwd=2)
@@ -156,13 +156,14 @@ colnames(data_expression) = hugo_symbols
 
 
 ```{r}
-source("/Users/lucamainini/Library/CloudStorage/OneDrive-PolitecnicodiMilano/Applied Statistics/Exam notebook/functions.R") ##for mcshapiro.test
-# question a)
+source("/Users/lucamainini/Library/CloudStorage/OneDrive-PolitecnicodiMilano/Applied Statistics/Notebook EX/functions.R") ##for mcshapiro.test
+
+A= (group == levels(group)[1])
+B= (group == levels(group)[2])
 
 # normality (multivariate) within the groups
 mcshapiro.test(data_expression[A,])
 mcshapiro.test(data_expression[B,])
-mcshapiro.test(data_expression[C,])
 
 ```
 
