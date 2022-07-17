@@ -220,14 +220,12 @@ d.ec <- hclust(d.e, method='complete')
 ward <- hclust(d.e, method='ward.D2')
 
 # plot of the dendrograms
-##xquartz()
 par(mfrow=c(1,3))
 plot(d.es, main='euclidean-single', hang=-0.1, xlab='', labels=F, cex=0.6, sub='')
 plot(d.ec, main='euclidean-complete', hang=-0.1, xlab='', labels=F, cex=0.6, sub='')
 plot(d.ea, main='euclidean-average', hang=-0.1, xlab='', labels=F, cex=0.6, sub='')
 
 # plot dendrograms (with eucledian it seems 2 clusters)
-##xquartz()
 par(mfrow=c(1,3))
 plot(d.es, main='euclidean-single', hang=-0.1, xlab='', labels=F, cex=0.6, sub='')
 rect.hclust(d.es, k=2)
@@ -581,13 +579,15 @@ ms <- cor(d.m, coph.ms)
 mc <- cor(d.m, coph.mc)
 ma <- cor(d.m, coph.ma)
 mw <- cor(d.m, coph.mw)
-c("Mahn-Single"=es,"Mahn-Compl."=ec,"Mahn-Ave."=ea, "MahnWard"=ew )
+c("Mahn-Single"=ms,"Mahn-Compl."=mc,"Mahn-Ave."=ma, "MahnWard"=mw )
 ```
 
 ## K-MEANS
 
 ```{r}
 #result.k <- kmeans(data_5, centers=3) # Centers: fixed number of clusters
+breast_auc = t(breast_data_treatment_auc)
+data_5 = na.aggregate(breast_auc)
 
 library(factoextra)
 fviz_nbclust(data_5, FUN = kmeans, method = "silhouette") 
