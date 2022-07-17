@@ -148,47 +148,55 @@ image(as.matrix(coph.ca))
 #Select the cell line of the clusters
 
 groups <- result.k$cluster
-matrix_group= data.frame(groups)
+matrix_group= data.frame(cluster.w)
 
 #index in the AUC matrix
 index_1= which(matrix_group==1)
 index_2= which(matrix_group==2)
 index_3= which(matrix_group==3)
-#index_4= which(matrix_group==4)
+index_4= which(matrix_group==4)
 #index_5= which(matrix_group==5)
 
 name=rownames(matrix_group)
 name1=name[index_1]
 name2=name[index_2]
 name3=name[index_3]
-#name4=name[index_4]
+name4=name[index_4]
 #name5=name[index_5]
 
 M1=M[index_1,]
 M2=M[index_2,]
 M3=M[index_3,]
-M_new= rbind(M1,M2,M3)
+M4=M[index_4,]
+M_new= rbind(M1,M2,M3,M4)
 library(heatmaply)
-heatmaply(data.matrix(M_new))
+heatmaply(data.matrix(M_new)) #heatmap of treatment ordered by the clusters
 
-#variance
+#variance per treatment
+ward <- hclust(de, method='ward.D2')
+cluster.w <-cutree(ward, k=4)
+
 M_var= apply(M,2,var)
 x11()
 plot(M_var)
 
-M_0.06= M[,M_var>0.06]
-heatmaply(data.matrix(M_0.06))
+M_0.06= M[,M_var>0.04]
+heatmaply(data.matrix(M_0.06)) #we plot only the treatment with the most variability
+                               # it's possible that the cluster is base on the variability
+x11()
+pairs(M_0.06,col=groups) # only with the treat with most variability
 
 #rpkm dataset
 R=as.data.frame(mrna_data)
 R= t(R)
 R=scale(R)
-
+Q<-R
+sum(is.na(Q))
+for(i in 1:length(colnames(Q)))
+  for(j in 1:length(rownames(Q)))
+    if(is.na(Q[j,i]))
+      R=Q[,-c(i)]
 sum(is.na(R))
-for(i in 1:length(colnames(R)))
-  for(j in 1:length(rownames(R)))
-    if(is.na(R[j,i]))
-      R=R[,-c(i)]
 
 rpkm_col= rownames(R)
 rpkm_1<-NULL
@@ -216,6 +224,9 @@ X11()
 par(mfrow=c(1,2))
 plot(R, main= 'rpkm',col=groups)
 plot(reduced_R_scaled, main='rpkm on PC', col=groups)
+# I don't know if this is the right way...
+# I would like to plot the dataset of rpkm on the space given by the P direction obtained from AUC
+
 
 #expression
 #scaling
@@ -230,7 +241,12 @@ R1 = R[index_match_1,]
 R2=  R[index_match_2,]
 R3=  R[index_match_3,] 
 
+#check better.. na line 12
+R2<- R2[-12,]
+sum(is.na(R2))
+
 R_new= rbind(R1,R2,R3)
+sum(is.na(R_new))
 library(heatmaply)
 heatmaply(data.matrix(R_new))
 
@@ -281,6 +297,8 @@ plot(R2,col=col2)
 plot(reduced_R2,col=col2)
 max(R2) #7.212
 min(R2) #-2.2846
+x11()
+heatmap(data.matrix(R2))
 
 col3<-NULL
 for(i in 1:length(index_match_3))
@@ -299,13 +317,13 @@ plot(reduced_R3,col=col3)
 
 max(R3) #7.0511
 min(R3) #-1.723492
-
-
+x11()
+heatmap(data.matrix(R3))
 
 
 library(fpc)
 
-db <- dbscan(M,eps=5,MinPts = 2)
+db <- dbscan(M,eps=2,MinPts = 2)
 db$cluster
 db
 

@@ -12,7 +12,11 @@ knitr::opts_chunk$set(echo = TRUE)
 ## 1.IMPORT DATASET
 
 ```{r cars}
-data_patient= read.delim(file.path("Dataset", "data_clinical_patient.txt"), header = TRUE, comment.char = '#')
+setwd("~/GitHub/AS_Project_2022")
+
+
+
+data_patient= read.delim(file.path("Dataset/data_clinical_patient.txt"), header = TRUE, comment.char = '#')
 
 data_treatment_auc= read.delim(file.path("Dataset", 'data_drug_treatment_auc.txt'), header = TRUE, comment.char = '#')
 
