@@ -330,9 +330,13 @@ We can also check the model performance using the test dataset.
 postResample(predict(result_rfe1, x_test), y_test)
 ```
 
-# 13 genes
+# CLASSIFICATION ON BREAST CLUSTERS
 ```{r}
+# SELECT MOST INFLUENTIAL GENES
+# save(good_genes,file="selected_genes.Rdata")
 # load("selected_genes.Rdata")
+# load(breast_data_rpkm)
+# load(breast_auc_data)
 n=13
 selected_genes <- good_genes[1:n]
 ```
@@ -382,6 +386,7 @@ data_expression <- data.frame(data_expression)
 colnames(data_expression) = selected_genes
 ```
 
+
 ```{r}
 library(randomForest)
 require(caTools)
@@ -393,16 +398,90 @@ names(data) <- gsub("\\-", "", names(data))
 sample = sample.split(group, SplitRatio = .85)
 train = subset(data, sample == TRUE)
 test  = subset(data, sample == FALSE)
-dim(train)
-dim(test)
+cat("train dataset dim", dim(train))
+cat(", test dataset dim",dim(test))
 
 rf = randomForest(y ~., data=data)
-table(data[,14],predict(rf)) #OUT-OF-A-BAG ESTIMATION
+table(data[,(n+1)],predict(rf)) #OUT-OF-A-BAG ESTIMATION
 
 rf = randomForest(y ~., data=train) #based on trainin 
 # ON TEST
-pred = predict(rf, newdata=test[-14])
-cm = table(test[,14], pred)
+pred = predict(rf, newdata=test[-(n+1)])
+cm = table(test[,(n+1)], pred)
 cm
+```
+```{r}
+X <- dplyr::select(data, - y)
+group = data$y
+
+library(MASS)
+lda.fit <- lda(y ~., data=data)
+lda.fit
+plot(lda.fit)
+#plot(data_plot$v1, data_plot$v2)
+#text(data_plot$v1, data_plot$v2, labels =group)
+
+
+  n       <- length(group)      # total number of observations
+  ng      <- table(group)       # number of obs. in each group
+  group_names   <- levels(group)      # name of groups
+  g       <- length(group_names)            # number of groups
+
+Lda.pred <- predict(lda.fit, as.data.frame(X))
+
+cat("1) APER (apparent error rate)\n")
+#Lda.pred$class   # assigned classes
+#group     # true labels
+cat("The confusion matrix is\n")
+misc <- table(class.true=group, class.assigned=Lda.pred$class)
+print(misc) #CONFUSION MATRIX
+errors <- (Lda.pred$class != group)
+
+#APER   <- sum(errors)/length(group) #if no prior
+APER <- 0
+for(gi in 1:g)
+  APER <- APER + sum(misc[gi,-gi])/sum(misc[gi,]) * lda.fit$prior[gi]
+cat("\nThe APER of LDA is", APER, "\n") #
+
+
+LdaCV.aut <- lda(as.data.frame(X), group, CV=TRUE)  # specify the argument CV cross validation
+
+#LdaCV.aut$class #if we leave out the element i is classified as LdaCV.iris$class
+#group
+misc_cv <- table(class.true=group, class.assigned=LdaCV.aut$class)
+print(misc_cv)
+
+errorsCV <- (LdaCV.aut$class != group)
+#errorsCV
+#sum(errorsCV)
+# AERCV   <- sum(errorsCV)/length(group)
+
+AERCV <- 0
+for(gi in 1:g)
+  AERCV <- AERCV + sum(misc_cv[gi,-gi])/sum(misc_cv[gi,]) * lda.fit$prior[gi]
+cat("\nThe AERCV of LDA is", AERCV, "\n")
+
+cat("max prior was", lda.fit$prior[gi],"\n")
+```
+
+```{r}
+library(plotly)
+plot_ly(data = data_plot, x = ~v1, y = ~v2, z = ~v3,
+            mode   = 'markers',
+            color = as.character(group),
+            type="scatter3d"
+            #colorscale='earth'
+    ) %>% layout(title = 'Visualization of cells on AUC first 3 PCs - AUC group',
+                 legend = list(title=list(text='average of treatment efficacy'))
+    )#colors based on treatment efficacy average  
+
+plot_ly(data = data_plot, x = ~v1, y = ~v2, z = ~v3,
+            mode   = 'markers',
+            color = as.character(Lda.pred$class),
+            type="scatter3d"
+            #colorscale='earth'
+    ) %>% layout(title = 'Visualization of cells on AUC first 3 PCs - Classification group',
+                 legend = list(title=list(text='average of treatment efficacy'))
+    )
 ```
 
