@@ -64,35 +64,9 @@ average_perf
 
 
 # now make a cool function out of that
-contingency_table <- function(k = 2, fun = kmeans, 
-                                     # param for htrees KEEP THEM NULL IF YOU USE KMEANS
-                                     hc_method = NULL, hc_metric = NULL) 
-  {
-  
-  result.AUC <- NULL
-  result.rpkm <- NULL
-  
-  # case kmeans
-  if(is.null(hc_method)){
-    result.AUC <- fun(M1, centers=k)$cluster[indexes1]
-    result.rpkm <- fun(M2, centers=k)$cluster[indexes2]
-  }
-  else{
-    result.AUC <- fun(M1, k, hc_method = hc_method, hc_metric= hc_metric)$cluster[indexes1]
-    result.rpkm <- fun(M2, k, hc_method = hc_method, hc_metric= hc_metric)$cluster[indexes2]
-  }
-  result <- table(result.AUC, result.rpkm)
-  
-  #WHAT IS THE AMOUNT OF CORRECT LABELING ?
-  result.max <- apply(result, 1, max)
-  result.sum <- apply(result, 1, sum)
 
-
-  perf <- 100*result.max/result.sum
-  
-  return(list(result = result, perf = perf, avg_perf=mean(perf)))
-}
-
+##contingency_table <- function(k = 2, fun = kmeans, hc_method = NULL, hc_metric = NULL) 
+ 
 avg_perfs_kmeans <- c()
 for(i in 1:10){
   avg_perfs_kmeans <- c(avg_perfs_kmeans, contingency_table(i, kmeans)$avg_perf)
@@ -102,63 +76,8 @@ plot(avg_perfs_kmeans)
 
 # this is a plot of how similar are the classifications between both datasets 
 # depending on the number of cluster
-test_all_cluster_algo <- function(j=10){
-  avg_perfs_kmeans <- c()
-  
-  avg_perfs_ce <- c()
-  avg_perfs_ae <- c()
-  avg_perfs_se <- c()
-  
-  avg_perfs_cm <- c()
-  avg_perfs_am <- c()
-  avg_perfs_sm <- c()
-  
-  avg_perfs_cc <- c()
-  avg_perfs_ac <- c()
-  avg_perfs_sc <- c()
-  
-  for(i in 1:j){avg_perfs_kmeans <- c(avg_perfs_kmeans, contingency_table(i, kmeans)$avg_perf)}
-  
-  for(i in 1:j){avg_perfs_ce <- c(avg_perfs_ce, contingency_table(i, hcut, hc_method = "complete", hc_metric ="euclidian")$avg_perf)}
-  for(i in 1:j){avg_perfs_ae <- c(avg_perfs_ae, contingency_table(i, hcut, hc_method = "average", hc_metric ="euclidian")$avg_perf)}
-  for(i in 1:j){avg_perfs_se <- c(avg_perfs_se, contingency_table(i, hcut, hc_method = "single", hc_metric ="euclidian")$avg_perf)}
-  
-  for(i in 1:j){avg_perfs_cm <- c(avg_perfs_cm, contingency_table(i, hcut, hc_method = "complete", hc_metric ="manhattan")$avg_perf)}
-  for(i in 1:j){avg_perfs_am <- c(avg_perfs_am, contingency_table(i, hcut, hc_method = "average", hc_metric ="manhattan")$avg_perf)}
-  for(i in 1:j){avg_perfs_sm <- c(avg_perfs_sm, contingency_table(i, hcut, hc_method = "single", hc_metric ="manhattan")$avg_perf)}
-  
-  for(i in 1:j){avg_perfs_cc <- c(avg_perfs_cc, contingency_table(i, hcut, hc_method = "complete", hc_metric ="canberra")$avg_perf)}
-  for(i in 1:j){avg_perfs_ac <- c(avg_perfs_ac, contingency_table(i, hcut, hc_method = "average", hc_metric ="canberra")$avg_perf)}
-  for(i in 1:j){avg_perfs_sc <- c(avg_perfs_sc, contingency_table(i, hcut, hc_method = "single", hc_metric ="canberra")$avg_perf)}
-  
-  
-  
-  
-  n_clusters <- c(1:j)
-  
-  result <- data.frame(n_clusters, avg_perfs_kmeans,
-                     avg_perfs_ce, avg_perfs_ae, avg_perfs_se,
-                     avg_perfs_cm, avg_perfs_am, avg_perfs_sm,
-                     avg_perfs_cc, avg_perfs_ac, avg_perfs_sc)
-  
-  
-  fig <- plot_ly(result, x = ~n_clusters, y = ~avg_perfs_kmeans, name = 'kmeans', type = 'scatter', mode = 'lines+markers') 
-  fig <- fig %>% add_trace(y = ~avg_perfs_ce, name = 'complete euclidian', mode = 'lines+markers') 
-  fig <- fig %>% add_trace(y = ~avg_perfs_ae, name = 'average euclidian', mode = 'lines+markers') 
-  fig <- fig %>% add_trace(y = ~avg_perfs_se, name = 'single euclidian', mode = 'lines+markers') 
-  
-  fig <- fig %>% add_trace(y = ~avg_perfs_cm, name = 'complete manhattan', mode = 'lines+markers') 
-  fig <- fig %>% add_trace(y = ~avg_perfs_am, name = 'average manhattan', mode = 'lines+markers') 
-  fig <- fig %>% add_trace(y = ~avg_perfs_sm, name = 'single manhattan', mode = 'lines+markers') 
-  
-  fig <- fig %>% add_trace(y = ~avg_perfs_cc, name = 'complete canberra"', mode = 'lines+markers') 
-  fig <- fig %>% add_trace(y = ~avg_perfs_ac, name = 'average canberra', mode = 'lines+markers') 
-  fig <- fig %>% add_trace(y = ~avg_perfs_sc, name = 'single canberra', mode = 'lines+markers') 
-  
-  return(list(result = result, fig = fig))
-  
 
-} 
+# test_all_cluster_algo <- function(j=10)
 
 result_10 <- test_all_cluster_algo(10)
 
@@ -182,40 +101,8 @@ saveWidget(result_10$fig, "output/aygalic/CLUSTERING_COMPARAISON_TABLE.html", se
 #
 # returns a new list of clusters based on clusters2, 
 # but with indexes swapped to match clusters1's centroids
-align_clusters_in_space <- function(clusters1, clusters2, projected_obs){
-  n_clusters <- max(clusters1)
-  if(n_clusters<2) return(clusters2)
-  
-  new_clusters <- clusters2
-  for(i in 1:n_clusters){
-    # find centroid of each cluster for the first dataset
-    data <- projected_obs[clusters1==i,]
-    centroid1 <- rapply(data, mean)
-    
-    # find the matching centroid
-    # start with clust 1 ofc
-    k = 1
-    centroid2 <- rapply(projected_obs[clusters2==k,], mean)
-    # compute the original distance
-    d = dist(rbind(centroid1, centroid2))
-    
-    
-    for(j in 2:n_clusters){
-      centroid2_ <- rapply(projected_obs[clusters2==j,], mean)
-      # compute the distance bewteen current centroids
-      d_ = dist(rbind(centroid1, centroid2_))
-      if(d_ < d){
-        d <- d_
-        centroid2 <- centroid2_
-        k = j
-      }
-    }
-    # set the new cluster k of clusters2 to the cluster i of clusters1
-    new_clusters[clusters2==k] <- i
-  }
-  return (new_clusters)
-}
 
+# align_clusters_in_space <- function(clusters1, clusters2, projected_obs)
 
 
 
@@ -625,3 +512,131 @@ plot_ly(z = resulttable, type = "heatmap")
 table(result.rpkm, result.AUC)
 
 plot_ly(z = table(result.rpkm, result.AUC), type = "heatmap")
+
+
+
+# THIRD try at this
+# ONLY WORKS IN R^2 FOR NOW
+#align_clusters_in_space3 <- function(clusters1, clusters2, projected_obs){
+#  n_clusters <- max(clusters1)
+#  if(n_clusters<2) return(clusters2)
+#  
+#  centroids1 <- data.frame(x=list(), y=list())
+#  centroids2 <- data.frame(x=list(), y=list())
+#  
+#  
+#  
+#  for(i in 1:n_clusters){
+#    data <- projected_obs[clusters1==i,]
+#    mu = rapply(data, mean)
+#    centroids1[i, 1] <- mu[1]
+#    centroids1[i, 2] <- mu[2]
+#  }
+#  for(i in 1:n_clusters){
+#    data <- projected_obs[clusters2==i,]
+#    mu = rapply(data, mean)
+#    centroids2[i, 1] <- mu[1]
+#    centroids2[i, 2] <- mu[2]  
+#  }
+#  colnames(centroids1) <- c("x","y")
+#  colnames(centroids2) <- c("x","y")
+#  
+#  # we want to "align" the centroids
+#  # Let's first compute the distance 
+#  f_dist <- function(a, b){
+#    return(sqrt(((a$x - b$x)^2)+(a$y - b$y)^2))
+#  } 
+#  
+#  dist.e = data.frame()
+#  for(i in 1:n_clusters){
+#    for(j in 1:n_clusters){
+#      dist.e[i,j] = f_dist(centroids1[i,], centroids2[j,])
+#    }
+#  }
+#  
+#  # let's now do the ranking and ordering
+#  #order = rapply(dist.e, which.min)
+#  
+#  #new_clust <- as.factor(clusters1)
+#  #levels(new_clust) <- order
+#  
+#  # actually im not happy with the ordering
+#  # what we want : 
+#  # the clusters should be asociated to the first available label that is the 
+#  # closest to him
+#  
+#  # how to do so ?
+#  # we find the minimum of the distance
+#  # we assign match the corresponding clusters
+#  # we drop the lign (or assign it to the absurdly high values)
+#  
+#  dist.e.copy <- dist.e
+#  order <- NULL
+#  for(i in 1:n_clusters){
+#    min = which(dist.e.copy == min(dist.e.copy), arr.ind = TRUE)  
+#    # put the index of the minimal distance to 
+#    order <- c(order, min[2])
+#    dist.e.copy[]
+#    
+#  }
+#  order = rapply(dist.e, which.min)
+#  
+#  new_clust <- as.factor(clusters1)
+#  levels(new_clust) <- order
+#  
+#  return(list(centroids1_before = centroids1, 
+#              centroids2_before = centroids2, 
+#              dist = dist.e, 
+#              order = order, 
+#              #new_centroid = new_centroid,
+#              new_clusters = new_clust ))
+#}
+
+
+k=3
+c1 <- kmeans(M1, centers=k)$cluster[indexes1]
+c2 <- kmeans(M2, centers=k)$cluster[indexes2]
+
+
+
+
+
+
+test <- align_clusters_in_space3(c1, c2, reduced_M2_scaled)
+test$order
+test$dist
+
+
+as.factor(c1)==test$new_clusters
+
+
+
+plot(reduced_M2_scaled, col = c1, pch = 20, lwd = 0)
+
+points(test$centroids1_before, col = "blue", pch=3, lwd = 5)
+points(test$centroids2_before, col = "yellow", pch=3, lwd = 5)
+
+points(test$centroids1_before[1,], col = "green", pch=3, lwd = 5)
+points(test$centroids2_before[1,], col = "green", pch=3, lwd = 5)
+
+
+
+
+
+plot(test)
+
+c2 <- align_clusters_in_space(c1, c2, reduced_M2_scaled)
+
+resulttable <- table(c1, c2)
+resulttable
+plot_ly(z = resulttable, type = "heatmap")
+
+
+table(result.rpkm, result.AUC)
+
+plot_ly(z = table(result.rpkm, result.AUC), type = "heatmap")
+
+
+
+
+
