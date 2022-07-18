@@ -1,0 +1,184 @@
+---
+title: "Classification"
+author: "Luca"
+date: '2022-05-30'
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = '/Users/lucamainini/Documents/GitHub/AS_Project_2022')
+library("zoo")
+library(mvtnorm)
+library(rgl)
+library(car)
+library(plotly)
+library(shiny)
+library(factoextra)
+```
+
+## CLASSIFICATION
+```{r load_data}
+load("~/Documents/GitHub/AS_Project_2022/Visualization_clusters/breast_auc_data.Rdata")
+load(file.path("Dataset","breast_data_RPKM.Rdata"))
+breast_auc = t(breast_data_treatment_auc)
+data_5 = na.aggregate(breast_auc)
+### MEANS
+cell_means = apply(data_5,1,mean)
+
+### PCA
+cov2 = cov(data_5)
+decomp2 = eigen(cov2)
+P3 = as.matrix(decomp2$vectors[,1:3])
+reduced_M_ = data_5%*%P3
+colnames(reduced_M_) <- c("v1","v2", "v3")
+
+data_plot = data.frame(reduced_M_)
+data_plot$cell_means= cell_means
+```
+
+##  APPLLY K-MEAN CLUSTER
+
+You can also embed plots, for example:
+
+```{r k-means}
+k=3
+cluster.k <- kmeans(data_5, centers=k)
+group <- as.factor(cluster.k$cluster)
+A <- group==1
+B <- group==2
+C <- group==3
+```
+
+
+```{r}
+hugo_symbols = to_return_2$hugo_symbol
+# PROBLEM 2: Removing lines with low variance
+# To select the feature for our cluster analysis, we need first to reduce the number of genes considered.
+# We first decide to select the genes with highest variability between the different cell lines
+# This approach is motivated by the fact that if there is no variability between the different observations, cluster won't be possible
+data_expression_clean = to_return_2
+data_expression_clean$hugo_symbol = hugo_symbols
+
+# we first create a separated matrix of normalized data (remove influence of patient)
+M <- scale(select(data_expression_clean, -hugo_symbol)) 
+
+threshold_l <- 1
+threshold_h <- 100 
+
+row_var = apply(M, 1, var) #apply over rows: variability along the genes
+plot((row_var))
+abline(h=threshold_l, col='red')
+abline(h=threshold_h, col='red')
+
+sum(row_var > threshold_l & row_var < threshold_h)
+plot(row_var[row_var > threshold_l & row_var < threshold_h])
+
+data_exp_var <- data_expression_clean[row_var > threshold_l & row_var < threshold_h,]
+```
+
+```{r} 
+hugo_symbols = data_exp_var$hugo_symbol
+cell_indices = match(rownames(breast_auc),colnames(data_exp_var[-47]))
+data_temp = data_exp_var[,cell_indices]
+#data_rpkm$hugo_symbol = to_return_2$hugo_symbols
+#str(data_rpkm)
+```
+
+```{r}
+data_expression <- t(data_temp)
+data_expression <- data.frame(data_expression)
+colnames(data_expression) = hugo_symbols
+```
+
+
+```{r}
+source("/Users/lucamainini/Library/CloudStorage/OneDrive-PolitecnicodiMilano/Applied Statistics/Exam notebook/functions.R") ##for mcshapiro.test
+# question a)
+
+# normality (multivariate) within the groups
+mcshapiro.test(data_expression[A,])
+mcshapiro.test(data_expression[B,])
+mcshapiro.test(data_expression[C,])
+
+```
+
+```{r}
+library(MASS)
+result.lda <- lda.fit <- lda(group ~ ., data = data_expression)
+lda.fit
+plot(lda.fit)
+plot(data_plot$v1, data_plot$v2)
+text(data_plot$v1, data_plot$v2, labels =group)
+```
+
+```{r}
+library("dplyr")
+library("faux")
+library("DataExplorer")
+library("caret")
+library("randomForest")
+```
+
+```{r}
+control <- rfeControl(functions = rfFuncs, # random forest
+                      method = "repeatedcv", # repeated cv
+                      repeats = 5, # number of repeats
+                      number = 10) # number of folds
+```
+
+```{r}
+# Features
+x <- data_expression 
+
+# Target variable
+y <- group
+
+# Training: 80%; Test: 20%
+set.seed(2021)
+inTrain <- createDataPartition(y, p = .80, list = FALSE)[,1]
+
+x_train <- x[ inTrain, ]
+x_test  <- x[-inTrain, ]
+
+y_train <- y[ inTrain]
+y_test  <- y[-inTrain]
+```
+
+```{r}
+# Run RFE
+result_rfe1 <- rfe(x = x_train, 
+                   y = y_train, 
+                   sizes = c(1:30),
+                   rfeControl = control)
+
+# Print the results
+result_rfe1
+
+# Print the selected features
+good_genes <- predictors(result_rfe1)
+
+# Print the results visually
+ggplot(data = result_rfe1, metric = "Accuracy") + theme_bw()
+ggplot(data = result_rfe1, metric = "Kappa") + theme_bw()
+```
+
+```{r}
+varimp_data <- data.frame(feature = row.names(varImp(result_rfe1))[1:8],
+                          importance = varImp(result_rfe1)[1:8, 1])
+
+ggplot(data = varimp_data, 
+       aes(x = reorder(feature, -importance), y = importance, fill = feature)) +
+  geom_bar(stat="identity") + labs(x = "Features", y = "Variable Importance") + 
+  geom_text(aes(label = round(importance, 2)), vjust=1.6, color="white", size=4) + 
+  theme_bw() + theme(legend.position = "none")
+```
+
+We can also check the model performance using the test dataset. Both accuracy and Kappa values appear to be similar to those obtained from the training dataset.
+
+```{r}
+postResample(predict(result_rfe1, x_test), y_test)
+```
+

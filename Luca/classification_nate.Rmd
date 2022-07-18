@@ -1,0 +1,487 @@
+---
+title: "Classification"
+author: "Luca"
+date: '2022-05-30'
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = '/Users/lucamainini/Documents/GitHub/AS_Project_2022')
+library("zoo")
+library(mvtnorm)
+library(rgl)
+library(car)
+library(plotly)
+library(shiny)
+library(factoextra)
+```
+
+```{r functions}
+#import nate's and luca's function
+source(file.path("nate", "utils", "nate_utils.R"))
+source(file.path("Luca", "luca_utils.R"))
+```
+
+```{r import data, eval=FALSE, include=FALSE}
+#path="/Users/lucamainini/Documents/GitHub/AS_Project_2022/Dataset"
+path="Dataset"
+result <- import_dataset(path)
+auc=result$auc
+rpkm=result$rpkm
+rm(result)
+```
+
+```{r}
+#extract whatever cancer_types
+cancers = c("CENTRAL_NERVOUS_SYSTEM", "BREAST")
+data.rpkm = block_dat(cancers, rpkm)
+
+#auc if ya want 
+data.auc = block_dat(cancers, auc)
+
+#colnames(data.rpkm) == colnames(data.auc)
+```
+
+##  APPLLY CLUSTERs
+
+You can also embed plots, for example:
+```{r}
+cancer2.data = block_dat(cancers, auc)
+na_rows = sort(rowSums(is.na(cancer2.data)), decreasing=FALSE)
+
+#we can choose to reduce num rows such that ratio of nas to sample size is larger than 50%
+num_samples = dim(cancer2.data)[2]
+#drugs_kept = names(which(na_rows/num_samples <0.5))
+drugs_kept = names(na_rows[1:143])
+
+
+#reduce 
+cancer2.data = cancer2.data[drugs_kept, ]
+sum(is.na(cancer2.data))/dim(cancer2.data)[1]/dim(cancer2.data)[2]
+
+na_cols = sort(colSums(is.na(cancer2.data)), decreasing=FALSE)
+cells_kept = names(na_cols[1:79])
+cancer2.data = cancer2.data[,cells_kept ]
+
+sum(is.na(cancer2.data))/dim(cancer2.data)[1]/dim(cancer2.data)[2]
+
+#go through the clustering once again 
+cancer2.data = na.aggregate(cancer2.data)
+cancer2.data = t(cancer2.data)
+
+### PCA
+cancer2.cov = cov(cancer2.data)
+cancer2.eigen = eigen(cancer2.cov)
+scores2 = cancer2.data%*%cancer2.eigen$vectors
+
+#clustering on un-projected
+cancer2.dist = dist(cancer2.data, method="euclidean")
+cancer2.hclust = hclust(cancer2.dist, method = "complete")
+
+#x11()
+plot(cancer2.hclust)
+
+cluster2.ec <- cutree(cancer2.hclust, k=2) 
+
+#now get `real` labels and colour maps
+labels2.real = str_util(rownames(cancer2.data))
+reference_map2 = ifelse(labels2.real == "BREAST", 'red', 'blue')
+cluster_map2 = ifelse(cluster2.ec==1,'blue','red')
+
+#x11()
+par(mfrow=c(1,2))
+plot(scores2[,1], scores2[,2], col=cluster_map2, pch=16, asp=1, main="hierarchical clustering", lwd=2)
+plot(scores2[,1], scores2[,2], col=reference_map2, pch=16, asp=1, main="labels based on cancer", lwd=2)
+
+metric2 = data.frame(cancer = labels2.real, label = cluster2.ec)
+table(metric2)
+```
+
+
+```{r k-means}
+#import cluster2.ec
+group = as.factor(cluster2.ec-1)
+```
+
+# SELECTION OF GENES
+
+```{r}
+load("/Users/lucamainini/Documents/GitHub/AS_Project_2022/Dataset/breast_data_RPKM.Rdata")
+hugo_symbols = to_return_2$hugo_symbol
+# PROBLEM 2: Removing lines with low variance
+# To select the feature for our cluster analysis, we need first to reduce the number of genes considered.
+# We first decide to select the genes with highest variability between the different cell lines
+# This approach is motivated by the fact that if there is no variability between the different observations, cluster won't be possible
+data_expression_clean = data.rpkm
+data_expression_clean$hugo_symbol = hugo_symbols
+
+# we first create a separated matrix of normalized data (remove influence of patient)
+M <- scale(data.rpkm) 
+
+threshold_l <- 1
+threshold_h <- 100 
+
+row_var = apply(M, 1, var) #apply over rows: variability along the genes
+plot((row_var))
+abline(h=threshold_l, col='red')
+abline(h=threshold_h, col='red')
+
+sum(row_var > threshold_l & row_var < threshold_h)
+plot(row_var[row_var > threshold_l & row_var < threshold_h])
+
+# data_exp_var <- data_expression_clean[row_var > threshold_l & row_var < threshold_h,] # UPPER AND LOWER <-
+data_exp_var <- data_expression_clean[row_var > threshold_l,] # ONLY LOWER
+
+plot(row_var[row_var > threshold_l & row_var < threshold_h])
+
+# plot variabilities and names
+name_col <- hugo_symbols[order(row_var)]
+M1 <- data.rpkm[order(row_var),]
+apply(M1, 1, var)
+name_col
+```
+
+```{r} 
+hugo_symbols = data_exp_var$hugo_symbol
+cell_indices = match(rownames(cancer2.data),colnames(data_exp_var[-82]))
+data_temp = data_exp_var[,cell_indices]
+#data_rpkm$hugo_symbol = to_return_2$hugo_symbols
+#str(data_rpkm)
+```
+
+```{r}
+data_expression <- t(data_temp)
+data_expression <- data.frame(data_expression)
+colnames(data_expression) = hugo_symbols
+```
+
+
+```{r}
+source("/Users/lucamainini/Library/CloudStorage/OneDrive-PolitecnicodiMilano/Applied Statistics/Notebook EX/functions.R") ##for mcshapiro.test
+
+A= (group == levels(group)[1])
+B= (group == levels(group)[2])
+
+# normality (multivariate) within the groups
+mcshapiro.test(data_expression[A,])
+mcshapiro.test(data_expression[B,])
+
+```
+
+```{r lda}
+library(MASS)
+lda.fit <- lda(group ~ ., data = data_expression)
+lda.fit
+plot(lda.fit)
+#plot(data_plot$v1, data_plot$v2)
+#text(data_plot$v1, data_plot$v2, labels =group)
+
+
+  n       <- length(group)      # total number of observations
+  ng      <- table(group)       # number of obs. in each group
+  group_names   <- levels(group)      # name of groups
+  g       <- length(group_names)            # number of groups
+
+X= data_expression
+Lda.pred <- predict(lda.fit, as.data.frame(X))
+
+cat("1) APER (apparent error rate)\n")
+#Lda.pred$class   # assigned classes
+#group     # true labels
+cat("The confusion matrix is\n")
+misc <- table(class.true=group, class.assigned=Lda.pred$class)
+print(misc) #CONFUSION MATRIX
+errors <- (Lda.pred$class != group)
+
+#APER   <- sum(errors)/length(group) #if no prior
+APER <- 0
+for(gi in 1:g)
+  APER <- APER + sum(misc[gi,-gi])/sum(misc[gi,]) * lda.fit$prior[gi]
+cat("\nThe APER of LDA is", APER, "\n") #
+
+
+LdaCV.aut <- lda(as.data.frame(X), group, CV=TRUE)  # specify the argument CV cross validation
+
+#LdaCV.aut$class #if we leave out the element i is classified as LdaCV.iris$class
+#group
+misc_cv <- table(class.true=group, class.assigned=LdaCV.aut$class)
+print(misc_cv)
+
+errorsCV <- (LdaCV.aut$class != group)
+#errorsCV
+#sum(errorsCV)
+# AERCV   <- sum(errorsCV)/length(group)
+
+AERCV <- 0
+for(gi in 1:g)
+  AERCV <- AERCV + sum(misc_cv[gi,-gi])/sum(misc_cv[gi,]) * lda.fit$prior[gi]
+cat("\nThe AERCV of LDA is", AERCV, "\n")
+
+cat("max prior was", lda.fit$prior[gi],"\n")
+```
+## INFLUENTIAL GENES
+```{r}
+library("dplyr")
+library("faux")
+library("DataExplorer")
+library("caret")
+library("randomForest")
+```
+
+```{r}
+control <- rfeControl(functions = rfFuncs, # random forest
+                      method = "repeatedcv", # repeated cv
+                      repeats = 5, # number of repeats
+                      #number = 10 # number of folds
+)
+                      
+```
+
+```{r}
+
+# Features
+x <- data_expression 
+
+# Target variable
+# y <-as.factor(labels2.real) #se vuoi testare y come tumor label
+y <-group #testo AUC clusters
+# Training: 80%; Test: 20%
+set.seed(2021)
+inTrain <- createDataPartition(y, p = .80, list = FALSE)[,1]
+
+x_train <- x[ inTrain, ]
+x_test  <- x[-inTrain, ]
+
+y_train <- y[ inTrain]
+y_test  <- y[-inTrain]
+```
+
+```{r}
+# Run RFE
+result_rfe1 <- rfe(x = x_train, 
+                   y = y_train, 
+                   sizes = c(1:60),
+                   rfeControl = control)
+
+# Print the results
+result_rfe1
+result_rfe1$fit
+head(result_rfe1$resample)
+
+
+# Print the selected features
+good_genes <- predictors(result_rfe1)
+
+# Print the results visually
+#ggplot(data = result_rfe1, metric = "Accuracy") + theme_bw()
+#ggplot(data = result_rfe1, metric = "Kappa") + theme_bw()
+```
+
+```{r}
+trellis.par.set(caretTheme())
+plot(result_rfe1, type = c("g", "o"))
+```
+```{r}
+rfRFE <-  list(summary = defaultSummary,
+               fit = function(x, y, first, last, ...){
+                 library(randomForest)
+                 randomForest(x, y, importance = first, ...)
+                 },
+               pred = function(object, x)  predict(object, x),
+               rank = function(object, x, y) {
+                 vimp <- varImp(object)
+                 vimp <- vimp[order(vimp$Overall,decreasing = TRUE),,drop = FALSE]
+                 vimp$var <- rownames(vimp)                  
+                 vimp
+                 },
+               selectSize = pickSizeBest,
+               selectVar = pickVars)
+
+
+ctrl <- rfeControl(functions = rfRFE, # random forest
+                      method = "repeatedcv", # repeated cv
+                      repeats = 5, # number of repeats
+                      #number = 10 # number of folds
+)
+result_rfe2 <- rfe(x = x_train, 
+                   y = y_train, 
+                   sizes = c(1:60),
+                   rfeControl = control)
+```
+
+
+```{r}
+varimp_data <- data.frame(feature = row.names(varImp(result_rfe1))[1:8],
+                          importance = varImp(result_rfe1)[1:8, 1])
+
+ggplot(data = varimp_data, 
+       aes(x = reorder(feature, -importance), y = importance, fill = feature)) +
+  geom_bar(stat="identity") + labs(x = "Features", y = "Variable Importance") + 
+  geom_text(aes(label = round(importance, 2)), vjust=1.6, color="white", size=4) + 
+  theme_bw() + theme(legend.position = "none")
+```
+
+We can also check the model performance using the test dataset. 
+
+```{r}
+postResample(predict(result_rfe1, x_test), y_test)
+```
+
+# CLASSIFICATION ON BREAST CLUSTERS
+```{r}
+# SELECT MOST INFLUENTIAL GENES
+# save(good_genes,file="selected_genes.Rdata")
+# load("selected_genes.Rdata")
+# load(breast_data_rpkm)
+# load(breast_auc_data)
+n=13
+selected_genes <- good_genes[1:n]
+```
+
+```{r}
+# load("breast_auc_data.Rdata")
+breast_auc = t(breast_data_treatment_auc)
+c = na.aggregate(breast_auc)
+
+### MEANS
+breast_auc = t(breast_data_treatment_auc)
+data_5 = na.aggregate(breast_auc)
+
+### MEANS
+cell_means = apply(data_5,1,mean)
+
+### PCA
+cov2 = cov(data_5)
+decomp2 = eigen(cov2)
+P3 = as.matrix(decomp2$vectors[,1:3])
+reduced_M_ = data_5%*%P3
+colnames(reduced_M_) <- c("v1","v2", "v3")
+
+data_plot = data.frame(reduced_M_)
+data_plot$cell_means= cell_means
+
+result.k <- kmeans(data_5, centers=3)
+group <- as.factor(result.k$cluster)
+```
+
+
+```{r}
+cancers = c("BREAST")
+#auc if ya want 
+data.auc = block_dat(cancers, auc)
+
+#colnames(data.auc)  
+chosen <- colnames(breast_data_treatment_auc)
+# removed ZR7530_BREAST" and BT549_BREAST
+
+hugo_symbols = to_return_2$hugo_symbol
+data.rpkm <- to_return_2[,-47]
+data_temp = data.rpkm[match(selected_genes,hugo_symbols),chosen]
+
+data_expression <- t(data_temp)
+data_expression <- data.frame(data_expression)
+colnames(data_expression) = selected_genes
+```
+
+
+```{r}
+library(randomForest)
+require(caTools)
+data = data_expression
+data$y = group # Target variable
+names(data) <- gsub("\\.", "", names(data))
+names(data) <- gsub("\\-", "", names(data))
+
+sample = sample.split(group, SplitRatio = .85)
+train = subset(data, sample == TRUE)
+test  = subset(data, sample == FALSE)
+cat("train dataset dim", dim(train))
+cat(", test dataset dim",dim(test))
+
+rf = randomForest(y ~., data=data)
+table(data[,(n+1)],predict(rf)) #OUT-OF-A-BAG ESTIMATION
+
+rf = randomForest(y ~., data=train) #based on trainin 
+# ON TEST
+pred = predict(rf, newdata=test[-(n+1)])
+cm = table(test[,(n+1)], pred)
+cm
+```
+```{r}
+X <- dplyr::select(data, - y)
+group = data$y
+
+library(MASS)
+lda.fit <- lda(y ~., data=data)
+lda.fit
+plot(lda.fit)
+#plot(data_plot$v1, data_plot$v2)
+#text(data_plot$v1, data_plot$v2, labels =group)
+
+
+  n       <- length(group)      # total number of observations
+  ng      <- table(group)       # number of obs. in each group
+  group_names   <- levels(group)      # name of groups
+  g       <- length(group_names)            # number of groups
+
+Lda.pred <- predict(lda.fit, as.data.frame(X))
+
+cat("1) APER (apparent error rate)\n")
+#Lda.pred$class   # assigned classes
+#group     # true labels
+cat("The confusion matrix is\n")
+misc <- table(class.true=group, class.assigned=Lda.pred$class)
+print(misc) #CONFUSION MATRIX
+errors <- (Lda.pred$class != group)
+
+#APER   <- sum(errors)/length(group) #if no prior
+APER <- 0
+for(gi in 1:g)
+  APER <- APER + sum(misc[gi,-gi])/sum(misc[gi,]) * lda.fit$prior[gi]
+cat("\nThe APER of LDA is", APER, "\n") #
+
+
+LdaCV.aut <- lda(as.data.frame(X), group, CV=TRUE)  # specify the argument CV cross validation
+
+#LdaCV.aut$class #if we leave out the element i is classified as LdaCV.iris$class
+#group
+misc_cv <- table(class.true=group, class.assigned=LdaCV.aut$class)
+print(misc_cv)
+
+errorsCV <- (LdaCV.aut$class != group)
+#errorsCV
+#sum(errorsCV)
+# AERCV   <- sum(errorsCV)/length(group)
+
+AERCV <- 0
+for(gi in 1:g)
+  AERCV <- AERCV + sum(misc_cv[gi,-gi])/sum(misc_cv[gi,]) * lda.fit$prior[gi]
+cat("\nThe AERCV of LDA is", AERCV, "\n")
+
+cat("max prior was", lda.fit$prior[gi],"\n")
+```
+
+```{r}
+library(plotly)
+plot_ly(data = data_plot, x = ~v1, y = ~v2, z = ~v3,
+            mode   = 'markers',
+            color = as.character(group),
+            type="scatter3d"
+            #colorscale='earth'
+    ) %>% layout(title = 'Visualization of cells on AUC first 3 PCs - AUC group',
+                 legend = list(title=list(text='average of treatment efficacy'))
+    )#colors based on treatment efficacy average  
+
+plot_ly(data = data_plot, x = ~v1, y = ~v2, z = ~v3,
+            mode   = 'markers',
+            color = as.character(Lda.pred$class),
+            type="scatter3d"
+            #colorscale='earth'
+    ) %>% layout(title = 'Visualization of cells on AUC first 3 PCs - Classification group',
+                 legend = list(title=list(text='average of treatment efficacy'))
+    )
+```
+
