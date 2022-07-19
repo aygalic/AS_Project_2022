@@ -167,15 +167,15 @@ server <- function(input, output) {
             color = as.character(cluster_group()$cluster)
             #colorscale='earth'
     ) %>% layout(title = 'Visualization of clusters on first 3 PCs'
-    ) %>% add_trace(
-      data = data_plot[names,]
-      , x = ~v1
-      , y = ~v2
-      , z = ~v3
-      , color= "k"
-      , mode = "markers"
-      , type = "scatter3d"
-      , marker = list(size = 5))
+    )#  %>% add_trace(
+    #   data = data_plot[names,]
+    #   , x = ~v1
+    #   , y = ~v2
+    #   , z = ~v3
+    #   , color= "k"
+    #   , mode = "markers"
+    #   , type = "scatter3d"
+    #   , marker = list(size = 5))
     #fig <- fig %>% add_markers()
   })
   

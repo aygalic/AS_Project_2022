@@ -386,6 +386,7 @@ data_expression <- data.frame(data_expression)
 colnames(data_expression) = selected_genes
 ```
 
+# CLASSIFICATION WITH RANDOM FOREST
 
 ```{r}
 library(randomForest)
@@ -410,6 +411,8 @@ pred = predict(rf, newdata=test[-(n+1)])
 cm = table(test[,(n+1)], pred)
 cm
 ```
+# CLASSIFICATION WITH LDA
+
 ```{r}
 X <- dplyr::select(data, - y)
 group = data$y
