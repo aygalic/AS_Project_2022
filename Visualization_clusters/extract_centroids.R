@@ -1,5 +1,3 @@
-<<<<<<< HEAD
-=======
 load("breast_auc_data.Rdata")
 load("selected_genes_data.Rdata")
 breast_auc = t(breast_data_treatment_auc)
@@ -47,47 +45,41 @@ while(APER>0.14){
 
 
 
-save(group, file="group_km.RData_3")
+# save(group, file="group_km.RData_3.RData")
 
->>>>>>> 87ee5c52708d5039a179e28c6e6b2cccf7af15c2
-data_5
-names = c(NULL)
-for(i in 1:dim(result.k$centers)[1]){
-  center_data = result.k$centers[i,]
-  for(j in 1:dim(data_5)[1]){
-    if(norm(center_data - data_5[j,], type='2')<0.9){
-      names = c(names,rownames(data_5)[j])
-      break 
-      #print(rownames(data_5)[j])
-    }
-  }
-}
-names
-
-<<<<<<< HEAD
-=======
-mean_clusters
->>>>>>> 87ee5c52708d5039a179e28c6e6b2cccf7af15c2
-
-plot(2:dim(mean_clusters)[2],
-     mean_clusters[1,2:dim(mean_clusters)[2]],type="l", 
-     col="orange", pch = 19)
-
-lines(2:dim(mean_clusters)[2],
-     mean_clusters[2,2:dim(mean_clusters)[2]],type="l", 
-     col="green")
-
-lines(2:dim(mean_clusters)[2],
-      mean_clusters[3,2:dim(mean_clusters)[2]],type="l", 
-      col="red")
-legend("bottomleft", title="Mean of Group",
-       c("1","2","3"), fill=c("orange", "green", "red"), horiz=TRUE, cex=0.8)
-
-mean_clusters[1,2:dim(mean_clusters)[2]]>mean_clusters[3,2:dim(mean_clusters)[2]]
-sum(mean_clusters[1,2:dim(mean_clusters)[2]]>mean_clusters[3,2:dim(mean_clusters)[2]])
-<<<<<<< HEAD
-=======
-
+# data_5
+# names = c(NULL)
+# for(i in 1:dim(result.k$centers)[1]){
+#   center_data = result.k$centers[i,]
+#   for(j in 1:dim(data_5)[1]){
+#     if(norm(center_data - data_5[j,], type='2')<0.9){
+#       names = c(names,rownames(data_5)[j])
+#       break 
+#       #print(rownames(data_5)[j])
+#     }
+#   }
+# }
+# names
+# 
+# mean_clusters
+# 
+# plot(2:dim(mean_clusters)[2],
+#      mean_clusters[1,2:dim(mean_clusters)[2]],type="l", 
+#      col="orange", pch = 19)
+# 
+# lines(2:dim(mean_clusters)[2],
+#      mean_clusters[2,2:dim(mean_clusters)[2]],type="l", 
+#      col="green")
+# 
+# lines(2:dim(mean_clusters)[2],
+#       mean_clusters[3,2:dim(mean_clusters)[2]],type="l", 
+#       col="red")
+# legend("bottomleft", title="Mean of Group",
+#        c("1","2","3"), fill=c("orange", "green", "red"), horiz=TRUE, cex=0.8)
+# 
+# mean_clusters[1,2:dim(mean_clusters)[2]]>mean_clusters[3,2:dim(mean_clusters)[2]]
+# sum(mean_clusters[1,2:dim(mean_clusters)[2]]>mean_clusters[3,2:dim(mean_clusters)[2]])
+# 
 
 # -------------- DAY 19 JUL -----------
 library(dplyr)
@@ -136,5 +128,4 @@ total <- rbind(df1,df2,df3)
 
 ggplot(total, aes(fill=Group, y=Expression, x=Gene)) + 
   geom_bar(position="dodge", stat="identity")
->>>>>>> 87ee5c52708d5039a179e28c6e6b2cccf7af15c2
   

@@ -9,7 +9,7 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-knitr::opts_knit$set(root.dir = '/Users/giuli/Documents/GitHub/AS_Project_2022')
+knitr::opts_knit$set(root.dir = '/Users/lucamainini/Documents/GitHub/AS_Project_2022')
 library("zoo")
 library(mvtnorm)
 library(rgl)
@@ -26,7 +26,7 @@ source(file.path("Luca", "luca_utils.R"))
 ```
 
 ```{r import data, eval=FALSE, include=FALSE}
-#path="/Users/giuli/Documents/GitHub/AS_Project_2022/Dataset"
+#path="/Users/lucamainini/Documents/GitHub/AS_Project_2022/Dataset"
 path="Dataset"
 result <- import_dataset(path)
 auc=result$auc
@@ -109,7 +109,7 @@ group = as.factor(cluster2.ec-1)
 # SELECTION OF GENES
 
 ```{r}
-load("/Users/giuli/Documents/GitHub/AS_Project_2022/Dataset/breast_data_RPKM.Rdata")
+load("/Users/lucamainini/Documents/GitHub/AS_Project_2022/Dataset/breast_data_RPKM.Rdata")
 hugo_symbols = to_return_2$hugo_symbol
 # PROBLEM 2: Removing lines with low variance
 # To select the feature for our cluster analysis, we need first to reduce the number of genes considered.
@@ -160,7 +160,7 @@ colnames(data_expression) = hugo_symbols
 
 
 ```{r}
-source("/Users/giuli/Library/CloudStorage/OneDrive-PolitecnicodiMilano/Applied Statistics/Notebook EX/functions.R") ##for mcshapiro.test
+source("/Users/lucamainini/Library/CloudStorage/OneDrive-PolitecnicodiMilano/Applied Statistics/Notebook EX/functions.R") ##for mcshapiro.test
 
 A= (group == levels(group)[1])
 B= (group == levels(group)[2])
@@ -342,11 +342,7 @@ selected_genes <- good_genes[1:n]
 ```
 
 ```{r}
-<<<<<<< HEAD
-#load("breast_auc_data.Rdata")
-=======
 # load("breast_auc_data.Rdata")
->>>>>>> 87ee5c52708d5039a179e28c6e6b2cccf7af15c2
 breast_auc = t(breast_data_treatment_auc)
 c = na.aggregate(breast_auc)
 
@@ -390,11 +386,7 @@ data_expression <- data.frame(data_expression)
 colnames(data_expression) = selected_genes
 ```
 
-<<<<<<< HEAD
-# Classificazione con random forest
-=======
 # CLASSIFICATION WITH RANDOM FOREST
->>>>>>> 87ee5c52708d5039a179e28c6e6b2cccf7af15c2
 
 ```{r}
 library(randomForest)
@@ -419,11 +411,7 @@ pred = predict(rf, newdata=test[-(n+1)])
 cm = table(test[,(n+1)], pred)
 cm
 ```
-<<<<<<< HEAD
-# Classificazione con LDA
-=======
 # CLASSIFICATION WITH LDA
->>>>>>> 87ee5c52708d5039a179e28c6e6b2cccf7af15c2
 
 ```{r}
 X <- dplyr::select(data, - y)
