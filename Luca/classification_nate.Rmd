@@ -342,7 +342,11 @@ selected_genes <- good_genes[1:n]
 ```
 
 ```{r}
+<<<<<<< HEAD
 #load("breast_auc_data.Rdata")
+=======
+# load("breast_auc_data.Rdata")
+>>>>>>> 87ee5c52708d5039a179e28c6e6b2cccf7af15c2
 breast_auc = t(breast_data_treatment_auc)
 c = na.aggregate(breast_auc)
 
@@ -386,7 +390,11 @@ data_expression <- data.frame(data_expression)
 colnames(data_expression) = selected_genes
 ```
 
+<<<<<<< HEAD
 # Classificazione con random forest
+=======
+# CLASSIFICATION WITH RANDOM FOREST
+>>>>>>> 87ee5c52708d5039a179e28c6e6b2cccf7af15c2
 
 ```{r}
 library(randomForest)
@@ -411,7 +419,11 @@ pred = predict(rf, newdata=test[-(n+1)])
 cm = table(test[,(n+1)], pred)
 cm
 ```
+<<<<<<< HEAD
 # Classificazione con LDA
+=======
+# CLASSIFICATION WITH LDA
+>>>>>>> 87ee5c52708d5039a179e28c6e6b2cccf7af15c2
 
 ```{r}
 X <- dplyr::select(data, - y)
