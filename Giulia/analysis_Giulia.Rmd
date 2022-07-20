@@ -120,6 +120,7 @@ mean(is.na(reduced_data_treatment))*100
 # Substitute NA value with 0.5
 reduced_data_treatment[is.na(reduced_data_treatment)]= 0.5
 sum(is.na(reduced_data_treatment))
+
 ```
 
 ## HEATMAP

@@ -36,7 +36,7 @@ rm(result)
 
 ```{r}
 #extract whatever cancer_types
-cancers = c("CENTRAL_NERVOUS_SYSTEM", "BREAST")
+cancers = c("BREAST")
 data.rpkm = block_dat(cancers, rpkm)
 
 #auc if ya want 
@@ -63,7 +63,7 @@ cancer2.data = cancer2.data[drugs_kept, ]
 sum(is.na(cancer2.data))/dim(cancer2.data)[1]/dim(cancer2.data)[2]
 
 na_cols = sort(colSums(is.na(cancer2.data)), decreasing=FALSE)
-cells_kept = names(na_cols[1:79])
+cells_kept = names(na_cols[1:46])
 cancer2.data = cancer2.data[,cells_kept ]
 
 sum(is.na(cancer2.data))/dim(cancer2.data)[1]/dim(cancer2.data)[2]
@@ -84,7 +84,7 @@ cancer2.hclust = hclust(cancer2.dist, method = "complete")
 #x11()
 plot(cancer2.hclust)
 
-cluster2.ec <- cutree(cancer2.hclust, k=2) 
+cluster2.ec <- cutree(cancer2.hclust, k=3) 
 
 #now get `real` labels and colour maps
 labels2.real = str_util(rownames(cancer2.data))
@@ -102,8 +102,25 @@ table(metric2)
 
 
 ```{r k-means}
-#import cluster2.ec
-group = as.factor(cluster2.ec-1)
+#load breast_data_treatment_auc
+breast_auc = t(breast_data_treatment_auc)
+data_5 = na.aggregate(breast_auc)
+
+### MEANS
+cell_means = apply(data_5,1,mean)
+
+### PCA
+cov2 = cov(data_5)
+decomp2 = eigen(cov2)
+P3 = as.matrix(decomp2$vectors[,1:3])
+reduced_M_ = data_5%*%P3
+colnames(reduced_M_) <- c("v1","v2", "v3")
+
+data_plot = data.frame(reduced_M_)
+data_plot$cell_means= cell_means
+
+result.k <- kmeans(data_5, centers=3)
+group <- result.k$cluster
 ```
 
 # SELECTION OF GENES
@@ -146,7 +163,7 @@ name_col
 
 ```{r} 
 hugo_symbols = data_exp_var$hugo_symbol
-cell_indices = match(rownames(cancer2.data),colnames(data_exp_var[-82]))
+cell_indices = match(names(group),colnames(data_exp_var[-47]))
 data_temp = data_exp_var[,cell_indices]
 #data_rpkm$hugo_symbol = to_return_2$hugo_symbols
 #str(data_rpkm)
@@ -333,7 +350,7 @@ postResample(predict(result_rfe1, x_test), y_test)
 # CLASSIFICATION ON BREAST CLUSTERS
 ```{r}
 # SELECT MOST INFLUENTIAL GENES
-# save(good_genes,file="selected_genes.Rdata")
+# save(good_genes,file="selected_genes_only_breast.Rdata")
 # load("selected_genes.Rdata")
 # load(breast_data_rpkm)
 # load(breast_auc_data)
@@ -386,7 +403,6 @@ data_expression <- data.frame(data_expression)
 colnames(data_expression) = selected_genes
 ```
 
-# CLASSIFICATION WITH RANDOM FOREST
 
 ```{r}
 library(randomForest)
@@ -411,7 +427,6 @@ pred = predict(rf, newdata=test[-(n+1)])
 cm = table(test[,(n+1)], pred)
 cm
 ```
-# CLASSIFICATION WITH LDA
 
 ```{r}
 X <- dplyr::select(data, - y)
