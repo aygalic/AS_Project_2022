@@ -6,9 +6,7 @@ library(plotly)
 library(shiny)
 library(factoextra)
 library(MASS)
-
-k=2
-
+library(dplyr)
 
 load("breast_auc_data.Rdata")
 load("selected_genes_data.Rdata")
@@ -27,35 +25,12 @@ colnames(reduced_M_) <- c("v1","v2", "v3")
 
 data_plot = data.frame(reduced_M_)
 data_plot$cell_means= cell_means
-APER =1
-while(APER>0.14){
-  result.k <- kmeans(data_5, centers=k)
-  cluster_group = result.k
-  group <- as.factor(result.k$cluster)
-  table(group)
-  
-  lda.fit <-  lda(cluster_group$cluster ~., data= data[,1:13])
-  Lda.pred <-  predict(lda.fit , as.data.frame(data[,1:13]))
-  
-  n       <-   length(cluster_group$cluster)       # total number of observations
-  ng      <-   table(cluster_group$cluster)       # number of obs. in each group
-  group_names   <-   levels(group)      # name of groups
-  g       <-   length(group_names)
-  
-  misc <- table(class.true=cluster_group$cluster, class.assigned=Lda.pred$class)
-  
-  #print(misc) #CONFUSION MATRIX
-  
-  APER=0
-  for(gi in 1:g){
-    APER <- APER + sum(misc[gi,-gi])/sum(misc[gi,]) * lda.fit$prior[gi]
-  }
-  
-  print(APER)
-  if(APER<0.10) break
-}
 
-print(misc)
+shapiro.test(rowMeans(data_5))
+group <- ifelse(rowMeans(data_5)>0.90,3,2)
+group[which(rowMeans(data_5)<0.82)]=1
+group
+
 
 # save(group, file="group_km.RData_3.RData")
 
@@ -95,10 +70,10 @@ print(misc)
 
 # -------------- DAY 19 JUL -----------
 library(dplyr)
-good_genes <- selected_genes
+#good_genes <- selected_genes
 n = length(selected_genes)
 new_data <- to_return_2 %>% dplyr::select(-c('ZR7530_BREAST','BT549_BREAST'))
-genes_data <- new_data[to_return_2$hugo_symbol %in% good_genes[1:n], ]
+genes_data <- new_data[to_return_2$hugo_symbol %in% good_genes[1:13], ]
 genes_hugo <- genes_data$hugo_symbol
 data_pc <- t(genes_data %>% dplyr::select(-c('hugo_symbol')))
 colnames(data_pc) <- genes_hugo
@@ -112,7 +87,7 @@ colnames(data_pc) <- genes_hugo
 # for(i in 1:k) 
 #   barplot(P[,i], ylim = c(-1, 1))
 
-k=3
+k=2
 
 colMeans(data_pc[group==2,])
 colMeans(data_pc[group==3,])
@@ -123,17 +98,17 @@ for(i in 1:k)
 
 rbind(colMeans(data_pc[group==1,]),colMeans(data_pc[group==2,]), colMeans(data_pc[group==3,]))
 
-
+dev.off()
 library(tidyr)
-df1 <- pivot_longer(as.data.frame(t(colMeans(data_pc[group==1,]))), cols=1:n, names_to = "Gene", values_to = "Expression")
-df1$Group <- rep('1',n)
+df1 <- pivot_longer(as.data.frame(t(colMeans(data_pc[group==1,]))), cols=1:13, names_to = "Gene", values_to = "Expression")
+df1$Group <- rep('1',13)
 
-df2 <- pivot_longer(as.data.frame(t(colMeans(data_pc[group==2,]))), cols=1:n, names_to = "Gene", values_to = "Expression")
-df2$Group <- rep('2',n)
+df2 <- pivot_longer(as.data.frame(t(colMeans(data_pc[group==2,]))), cols=1:13, names_to = "Gene", values_to = "Expression")
+df2$Group <- rep('2',13)
 
 
-df3 <- pivot_longer(as.data.frame(t(colMeans(data_pc[group==3,]))), cols=1:n, names_to = "Gene", values_to = "Expression")
-df3$Group <- rep('3',n)
+df3 <- pivot_longer(as.data.frame(t(colMeans(data_pc[group==3,]))), cols=1:13, names_to = "Gene", values_to = "Expression")
+df3$Group <- rep('3',13)
 
 # df4 <- pivot_longer(as.data.frame(t(colMeans(data_pc[group==4,]))), cols=1:13, names_to = "Gene", values_to = "Expression")
 # df4$Group <- rep('4',13)
@@ -154,6 +129,24 @@ plot_ly(data = data_plot, x = ~v1, y = ~v2, z = ~v3,
 plot_ly(data = data_plot, x = ~v1, y = ~v2, z = ~v3,
         mode   = 'markers',
         type="scatter3d",
-        color = as.character(cluster_group$cluster)
+        color = as.character(group)
         #colorscale='earth'
 ) %>% layout(title = 'Visualization of clusters on first 3 PCs')
+
+# model = glm(rowMeans(data_5) ~ .,
+#             data = data[1:13],family = binomial(link = logit))
+
+write_xlsx(df1,"df1.xlsx")
+write_xlsx(df2,"df2.xlsx")
+write_xlsx(df3,"df43.xlsx")
+
+
+library(betareg)
+
+model = betareg(rowMeans(data_5) ~., data = data[1:13])
+summary(model)
+
+
+library(emmeans)
+
+joint_tests(model)

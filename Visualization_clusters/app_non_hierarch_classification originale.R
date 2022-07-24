@@ -10,7 +10,6 @@ library(plotly)
 library(shiny)
 library(factoextra)
 library(MASS)
-
 ### LOAD DATA
 #setwd("/Users/lucamainini/Documents/GitHub/AS_Project_2022")
 #load(file.path("Dataset","breast_auc_data.Rdata"))
@@ -42,13 +41,13 @@ ui <- fluidPage(
 
     # Sidebar with a slider input for number of bins 
     fluidRow(column(3,
-              selectInput('meth', 'Choose a distance', choices = list(
-                "K-mean" = 'kmeans', "Average AUC" = 'AUC'),
+              selectInput('dist', 'Choose a distance', choices = list(
+                "K-mean" = 'kmeans', "K-mean" = 'kmeans'),
                 selected = 'kmeans')
     ),
     
             column(3,
-                   sliderInput("k_n", 'Choose number of clusters', min = 2,  max = 10, value = 3)
+                   sliderInput("k", 'Choose number of clusters', min = 2,  max = 10, value = 3)
             ),
     
     
@@ -57,32 +56,32 @@ ui <- fluidPage(
     
     fluidRow(
     # column(6,plotOutput("plot_silhouette")),
-      column(6,plotOutput("plot_wss_n"))
+      column(6,plotOutput("plot_wss"))
     
     ),
     
     
     fluidRow(
-      column(5,plotlyOutput("plot_mean_n")),
-      column(5,plotlyOutput("plot_meth"))
-    ),
-    
-    fluidRow(
-      
-      column(5,plotlyOutput("plot_classified_n")),
-      column(5,plotlyOutput("plot_meth_2"))
+      column(5,plotlyOutput("plot_mean")),
+      column(5,plotlyOutput("plot_dist"))
     ),
     
     fluidRow(
       
-      column(5,verbatimTextOutput("table_n")),
-      column(3,verbatimTextOutput("APER_n")),
+      column(5,plotlyOutput("plot_classified")),
+      column(5,plotlyOutput("plot_dist_2"))
     ),
     
     fluidRow(
       
-      column(5,verbatimTextOutput("table_CV_n")),
-      column(3,verbatimTextOutput("AERCV_n"))
+      column(5,verbatimTextOutput("table")),
+      column(3,verbatimTextOutput("APER")),
+    ),
+    
+    fluidRow(
+      
+      column(5,verbatimTextOutput("table_CV")),
+      column(3,verbatimTextOutput("AERCV"))
     ),
     # 
     # fluidRow(
@@ -95,71 +94,58 @@ ui <- fluidPage(
 # Define server logic required to draw a histogram
 server <- function(input, output) {
   
-  result.k <- reactive({
-     kmeans(data_5, centers=input$k_n)
+  cluster_group <- reactive({
+     result.k <- kmeans(data_5, centers=input$k)
+   }) 
+  
+  # data$y <- reactive({
+  #   cluster_group()$cluster
+  # }) 
+  
+  lda.fit <- reactive({lda(cluster_group()$cluster ~., data= data[,1:13])}) 
+  Lda.pred <- reactive({predict(lda.fit(), as.data.frame(data[,1:13]))}) 
+  
+  n       <- reactive({ length(cluster_group()$cluster) })      # total number of observations
+  ng      <- reactive({ table(cluster_group()$cluster)  })      # number of obs. in each group
+  group_names   <- reactive({ levels(cluster_group()$cluster)  })     # name of groups
+  g       <- reactive({ length(group_names)})
+  
+  
+  misc <- reactive({table(class.true=cluster_group()$cluster, class.assigned=Lda.pred()$class)})
+  #print(misc) #CONFUSION MATRIX
+  errors <- reactive({(Lda.pred()$class != cluster_group()$cluster)})
+  APER <- reactive({
+    APER=0
+  for(gi in 1:g()){
+    APER <- APER + sum(misc()[gi,-gi])/sum(misc()[gi,]) * lda.fit()$prior[gi]}
+    APER
     })
   
-  group.k <- reactive({
-    as.factor(result.k()$cluster)
-  })
-  
-    cluster_group_n <- reactive({
-      if (input$meth == 'kmeans'){
-        return(group.k())
-      }
-      if (input$meth == 'AUC'){
-        group <- ifelse(rowMeans(data_5)>0.90,3,2)
-        group[which(rowMeans(data_5)<0.82)]=1
-        group = as.factor(group)
-        return(group)
-      }
-    }) 
-      
-  
-  lda.fit_n <- reactive({lda(cluster_group_n() ~., data= data[,1:13])}) 
-  Lda.pred_n <- reactive({predict(lda.fit_n(), as.data.frame(data[,1:13]))}) 
-  
-  n_n       <- reactive({ length(cluster_group_n()) })      # total number of observations
-  ng_n      <- reactive({ table(cluster_group_n())  })      # number of obs. in each group
-  group_names_n   <- reactive({ levels(cluster_group_n())  })     # name of groups
-  g_n       <- reactive({ length(group_names_n)})
-  
-  
-  misc_n <- reactive({table(class.true=cluster_group_n(), class.assigned=Lda.pred_n()$class)})
-  #print(misc_n) #CONFUSION MATRIX
-  errors <- reactive({(Lda.pred_n()$class != cluster_group_n())})
-  APER_n <- reactive({
-    APER_n=0
-  for(gi in 1:g_n()){
-    APER_n <- APER_n + sum(misc_n()[gi,-gi])/sum(misc_n()[gi,]) * lda.fit_n()$prior[gi]}
-    APER_n
-    })
-  
-  LdaCV.aut_n <- reactive({lda(cluster_group_n() ~., data= data[,1:13], CV=TRUE) })  
-  misc_cv_n <- reactive({table(class.true=cluster_group_n(), class.assigned=LdaCV.aut_n()$class)})
-  errorsCV <- reactive({(LdaCV.aut_n()$class != cluster_group_n())})
-  AERCV_n <- reactive({
-    AERCV_n=0
-    for(gi in 1:g_n()){
-      AERCV_n <- AERCV_n + sum(misc_cv_n()[gi,-gi])/sum(misc_cv_n()[gi,]) * lda.fit_n()$prior[gi]}
-    AERCV_n
+  LdaCV.aut <- reactive({lda(cluster_group()$cluster ~., data= data[,1:13], CV=TRUE) })  
+  misc_cv <- reactive({table(class.true=cluster_group()$cluster, class.assigned=LdaCV.aut()$class)})
+  errorsCV <- reactive({(LdaCV.aut()$class != cluster_group()$cluster)})
+  AERCV <- reactive({
+    AERCV=0
+    for(gi in 1:g()){
+      AERCV <- AERCV + sum(misc_cv()[gi,-gi])/sum(misc_cv()[gi,]) * lda.fit()$prior[gi]}
+    AERCV
   })
   
   
-  # df1 <- reactive({pivot_longer(as.data.frame(t(colMeans(data_pc[cluster_group_n()==1,]))), cols=1:13, names_to = "Gene", values_to = "Expression")
+  # df1 <- reactive({pivot_longer(as.data.frame(t(colMeans(data_pc[cluster_group()$cluster==1,]))), cols=1:13, names_to = "Gene", values_to = "Expression")
   # df1$Group <- rep('1',13)})
   # 
-  # df2 <- reactive({pivot_longer(as.data.frame(t(colMeans(data_pc[cluster_group_n()==2,]))), cols=1:13, names_to = "Gene", values_to = "Expression")
+  # df2 <- reactive({pivot_longer(as.data.frame(t(colMeans(data_pc[cluster_group()$cluster==2,]))), cols=1:13, names_to = "Gene", values_to = "Expression")
   # df2$Group <- rep('2',13)})
   # 
   # 
-  # df3 <- reactive({pivot_longer(as.data.frame(t(colMeans(data_pc[cluster_group_n()==3,]))), cols=1:13, names_to = "Gene", values_to = "Expression")
+  # df3 <- reactive({pivot_longer(as.data.frame(t(colMeans(data_pc[cluster_group()$cluster==3,]))), cols=1:13, names_to = "Gene", values_to = "Expression")
   # df3$Group <- rep('3',13)})
   
   # df4 <- pivot_longer(as.data.frame(t(colMeans(data_pc[group==4,]))), cols=1:13, names_to = "Gene", values_to = "Expression")
   # df4$Group <- rep('4',13)
   
-  # total <- reactive({rbind(df1(),df2(),df3())})
+  total <- reactive({rbind(df1(),df2(),df3())})
   
   # ggplot(total, aes(fill=Group, y=Expression, x=Gene)) + 
   #   geom_bar(position="dodge", stat="identity")
@@ -168,12 +154,11 @@ server <- function(input, output) {
   #   fviz_nbclust(data_5, FUN = kmeans, method = "silhouette")
   # })
 
-  output$plot_wss_n <- renderPlot({  
-    if (input$meth == 'kmeans'){
-    fviz_nbclust(data_5, FUN = kmeans, method = "wss")}
+  output$plot_wss <- renderPlot({  
+    fviz_nbclust(data_5, FUN = kmeans, method = "wss")
   })
 
-  output$plot_mean_n <- renderPlotly({
+  output$plot_mean <- renderPlotly({
     plot_ly(data = data_plot, x = ~v1, y = ~v2, z = ~v3,
             mode   = 'markers',
             color = ~cell_means,
@@ -184,26 +169,26 @@ server <- function(input, output) {
     )#colors based on treatment efficacy average  
   })
   
-  output$plot_meth <- renderPlotly({
-    name = input$meth
+  output$plot_dist <- renderPlotly({
+    name = input$dist
     # generate 3d plot based on the name of clusters
     plot_ly(data = data_plot, x = ~v1, y = ~v2, z = ~v3,
             mode   = 'markers',
             type="scatter3d",
-            color = as.character(cluster_group_n())
+            color = as.character(cluster_group()$cluster)
             #colorscale='earth'
     ) %>% layout(title = 'Visualization of clusters on first 3 PCs'
     )
     #fig <- fig %>% add_markers()
   })
 
-  output$plot_meth_2 <- renderPlotly({
-    name = input$meth
+  output$plot_dist_2 <- renderPlotly({
+    name = input$dist
     # generate 3d plot based on the name of clusters
     plot_ly(data = data_plot, x = ~v1, y = ~v2, z = ~v3,
             mode   = 'markers',
             type="scatter3d",
-            color = as.character(cluster_group_n())
+            color = as.character(cluster_group()$cluster)
             #colorscale='earth'
     ) %>% layout(title = 'Visualization of clusters on first 3 PCs'
     )#  %>% add_trace(
@@ -218,13 +203,13 @@ server <- function(input, output) {
     #fig <- fig %>% add_markers()
   })
   
-  output$plot_classified_n <- renderPlotly({
-    name = input$meth
+  output$plot_classified <- renderPlotly({
+    name = input$dist
     # generate 3d plot based on the name of clusters
     plot_ly(data = data_plot, x = ~v1, y = ~v2, z = ~v3,
             mode   = 'markers',
             type="scatter3d",
-            color = as.character(Lda.pred_n()$class)
+            color = as.character(Lda.pred()$class)
             #colorscale='earth'
     ) %>% layout(title = 'Visualization of classified on first 3 PCs'
     ) })
@@ -237,15 +222,15 @@ server <- function(input, output) {
     #fig <- fig %>% add_markers()
 
   
-  output$table_n <- renderPrint({ misc_n()})
-  output$table_CV_n <- renderPrint({ misc_cv_n()})
+  output$table <- renderPrint({ misc()})
+  output$table_CV <- renderPrint({ misc_cv()})
   
-  output$APER_n <- renderPrint({ 
+  output$APER <- renderPrint({ 
     "APER:"
-    APER_n()})
+    APER()})
   
-  output$AERCV_n <- renderPrint({ 
-    AERCV_n()})
+  output$AERCV <- renderPrint({ 
+    AERCV()})
   
 }
 

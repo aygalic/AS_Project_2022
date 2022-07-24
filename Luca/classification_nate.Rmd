@@ -386,15 +386,27 @@ data_expression <- data.frame(data_expression)
 colnames(data_expression) = selected_genes
 ```
 
+```{r}
+data = data$FBL
+data$RPS16
+data$REG1A
+data$PDIA4
+
+data$AC0040571
+data$CTD2328D61
+
+c(FBL,RPS16, REG1A, PDIA4, AC0040571, CTD2328D61)
+data$y = group # Target variable
+names(data) <- gsub("\\.", "", names(data))
+names(data) <- gsub("\\-", "", names(data))
+```
+
+
 # CLASSIFICATION WITH RANDOM FOREST
 
 ```{r}
 library(randomForest)
 require(caTools)
-data = data_expression
-data$y = group # Target variable
-names(data) <- gsub("\\.", "", names(data))
-names(data) <- gsub("\\-", "", names(data))
 
 sample = sample.split(group, SplitRatio = .85)
 train = subset(data, sample == TRUE)
@@ -415,7 +427,9 @@ cm
 
 ```{r}
 X <- dplyr::select(data, - y)
-group = data$y
+# group = data$y
+group = as.factor(group)
+data$y = group
 
 library(MASS)
 lda.fit <- lda(y ~., data=data)
@@ -466,6 +480,64 @@ cat("\nThe AERCV of LDA is", AERCV, "\n")
 
 cat("max prior was", lda.fit$prior[gi],"\n")
 ```
+
+```{r}
+
+  n       <- length(group)      # total number of observations
+  ng      <- table(group)       # number of obs. in each group
+  group_names   <- levels(group)      # name of groups
+  g       <- length(group_names)            # number of groups
+
+ 
+# abbiamo un'approssimazione a due decimali, per evitare che si sovrappongano aggiungiamo errore
+# questo viene fatto anche per aggiungere robustezza all'analisi [chiaramente piccolo errore]
+cat("Let us first see if there is normality and a difference in the groups\n")
+if(g==2) 
+  #two groups are true and false
+  {
+  true = X[  group==group_names[1], ]
+  false = X[  group==group_names[2], ]
+  print(mcshapiro.test(true))
+  print(mcshapiro.test(false))
+  
+  ts<- test.manova_g2(true, false)
+  print(ts)
+  S1<- ts$S1
+  S2<-ts$S2
+  par(mfrow=c(1,2))
+image(S1, col=heat.colors(100),main='Cov. S1', asp=1, axes = FALSE, breaks = quantile(rbind(S1,S2), (0:100)/100, na.rm=TRUE))
+image(S2, col=heat.colors(100),main='Cov. S2', asp=1, axes = FALSE, breaks = quantile(rbind(S1,S2), (0:100)/100, na.rm=TRUE))
+} else 
+    test.manova(X,group)
+
+
+
+  Var <- list()
+  for (i in 1:g){
+    Var[[i]] <- cov(X[  group==group_names[i], ])
+  }
+  print(Var)
+  
+  S  <-  cov(X)
+  
+  # Qualitatively: [it doesn't look to have the same covariance]
+  for(i in 1:g){
+    round(Var[[i]],digits=1)
+  }
+    
+  
+  
+  #x11(width=21)
+  par(mfrow=c(1,g))
+  for(i in 1:g){
+    image(Var[[i]],  
+          #col=heat.colors(100), 
+          #na.rm=TRUE
+    )
+  }
+```
+
+
 
 ```{r}
 library(plotly)

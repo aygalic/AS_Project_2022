@@ -95,10 +95,8 @@ print(misc)
 
 # -------------- DAY 19 JUL -----------
 library(dplyr)
-good_genes <- selected_genes
-n = length(selected_genes)
 new_data <- to_return_2 %>% dplyr::select(-c('ZR7530_BREAST','BT549_BREAST'))
-genes_data <- new_data[to_return_2$hugo_symbol %in% good_genes[1:n], ]
+genes_data <- new_data[to_return_2$hugo_symbol %in% good_genes[1:13], ]
 genes_hugo <- genes_data$hugo_symbol
 data_pc <- t(genes_data %>% dplyr::select(-c('hugo_symbol')))
 colnames(data_pc) <- genes_hugo
@@ -112,12 +110,12 @@ colnames(data_pc) <- genes_hugo
 # for(i in 1:k) 
 #   barplot(P[,i], ylim = c(-1, 1))
 
-k=3
+k=2
 
 colMeans(data_pc[group==2,])
 colMeans(data_pc[group==3,])
 par(#mar = c(1,4,0,2),
-  mfrow = c(k,1))
+mfrow = c(k,1))
 for(i in 1:k) 
   barplot(colMeans(data_pc[group==i,]))
 
@@ -125,20 +123,20 @@ rbind(colMeans(data_pc[group==1,]),colMeans(data_pc[group==2,]), colMeans(data_p
 
 
 library(tidyr)
-df1 <- pivot_longer(as.data.frame(t(colMeans(data_pc[group==1,]))), cols=1:n, names_to = "Gene", values_to = "Expression")
-df1$Group <- rep('1',n)
+df1 <- pivot_longer(as.data.frame(t(colMeans(data_pc[group==1,]))), cols=1:13, names_to = "Gene", values_to = "Expression")
+df1$Group <- rep('1',13)
 
-df2 <- pivot_longer(as.data.frame(t(colMeans(data_pc[group==2,]))), cols=1:n, names_to = "Gene", values_to = "Expression")
-df2$Group <- rep('2',n)
+df2 <- pivot_longer(as.data.frame(t(colMeans(data_pc[group==2,]))), cols=1:13, names_to = "Gene", values_to = "Expression")
+df2$Group <- rep('2',13)
 
 
-df3 <- pivot_longer(as.data.frame(t(colMeans(data_pc[group==3,]))), cols=1:n, names_to = "Gene", values_to = "Expression")
-df3$Group <- rep('3',n)
+df3 <- pivot_longer(as.data.frame(t(colMeans(data_pc[group==3,]))), cols=1:13, names_to = "Gene", values_to = "Expression")
+df3$Group <- rep('3',13)
 
 # df4 <- pivot_longer(as.data.frame(t(colMeans(data_pc[group==4,]))), cols=1:13, names_to = "Gene", values_to = "Expression")
 # df4$Group <- rep('4',13)
 
-total <- rbind(df1,df2,df3)
+total <- rbind(df1,df2)#,df3)
 
 ggplot(total, aes(fill=Group, y=Expression, x=Gene)) + 
   geom_bar(position="dodge", stat="identity")

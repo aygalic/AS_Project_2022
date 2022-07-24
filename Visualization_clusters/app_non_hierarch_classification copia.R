@@ -10,14 +10,14 @@ library(plotly)
 library(shiny)
 library(factoextra)
 library(MASS)
-
 ### LOAD DATA
 #setwd("/Users/lucamainini/Documents/GitHub/AS_Project_2022")
 #load(file.path("Dataset","breast_auc_data.Rdata"))
 load("breast_auc_data.Rdata")
 load("selected_genes_data.Rdata")
 breast_auc = t(breast_data_treatment_auc)
-data_5 = na.aggregate(breast_auc)
+prova <- breast_auc[,colnames(breast_auc)%in%drugs_relevant]
+data_5 = na.aggregate(prova) 
 
 ### MEANS
 cell_means = apply(data_5,1,mean)
@@ -33,25 +33,6 @@ data_plot = data.frame(reduced_M_)
 data_plot$cell_means= cell_means
 
 ### COMPUTATION OF DISTANCES 
-# d.e <- dist(data_5, method='euclidean')
-# d.m <- dist(data_5, method='manhattan')
-# d.c <- dist(data_5, method='canberra')
-# 
-# d.es <- hclust(d.e, method='single')
-# d.ea <- hclust(d.e, method='average')
-# d.ec <- hclust(d.e, method='complete')
-# d.w <- hclust(d.e, method='ward.D2')
-# 
-# d.ms <- hclust(d.m, method='single')
-# d.ma <- hclust(d.m, method='average')
-# d.mc <- hclust(d.m, method='complete')
-# d.mw <- hclust(d.m, method='ward.D2')
-# 
-# d.cs <- hclust(d.c, method='single')
-# d.ca <- hclust(d.c, method='average')
-# d.cc <- hclust(d.c, method='complete')
-# d.cw <- hclust(d.c, method='ward.D2')
-
 
 # Define UI for application that draws a histogram
 ui <- fluidPage(
@@ -62,121 +43,122 @@ ui <- fluidPage(
     # Sidebar with a slider input for number of bins 
     fluidRow(column(3,
               selectInput('dist', 'Choose a distance', choices = list(
-                "Eucledian" = 'euclidean', "Manhattan" = 'manhattan', "Canberra" = 'canberra'),
+                "K-mean" = 'kmeans', "K-mean" = 'kmeans'),
                 selected = 'euclidean')
-    ),
-            column(3,
-                   selectInput('linkage', 'Choose a Linkage', choices = list(
-                     "Single" = 'single', "Average" = 'average', "Complete" = 'complete', "Ward"='ward.D2'),
-                     selected = 'average')
     ),
     
             column(3,
                    sliderInput("k", 'Choose number of clusters', min = 2,  max = 10, value = 3)
             ),
     
-            column(3, verbatimTextOutput("cophern_value"))
-    
     
     ),
   
     
     fluidRow(
-    column(5,plotOutput("plot_dendogram")),
-    column(5,plotlyOutput("plot_dist"))
+    column(6,plotOutput("plot_silhouette")),
+    #column(6,plotlyOutput("plot_wss"))
     
     ),
     
     
     fluidRow(
       column(5,plotlyOutput("plot_mean")),
+      column(5,plotlyOutput("plot_dist"))
+    ),
+    
+    fluidRow(
+      
+      column(5,plotlyOutput("plot_classified")),
       column(5,plotlyOutput("plot_dist_2"))
     ),
     
-    
     fluidRow(
-
-      column(5,plotlyOutput("plot_classified")),
-      column(5,plotlyOutput("plot_dist_3"))
-    ),
-
-    fluidRow(
-
+      
       column(5,verbatimTextOutput("table")),
       column(3,verbatimTextOutput("APER")),
     ),
-
-fluidRow(
-
-  column(5,verbatimTextOutput("table_CV")),
-  column(3,verbatimTextOutput("AERCV"))
-)
+    
+    fluidRow(
+      
+      column(5,verbatimTextOutput("table_CV")),
+      column(3,verbatimTextOutput("AERCV"))
+    ),
+    
+    fluidRow(
+      
+      column(6,plotOutput("box_plot")),
+    )
 )
 
 
 # Define server logic required to draw a histogram
 server <- function(input, output) {
-  dist_mat <- reactive({
-    dist(data_5, method=input$dist)
-  })
-  data_c <- reactive({
-    hclust(dist_mat(), method=input$linkage)
-  })
   
   cluster_group <- reactive({
-    return(as.factor(cutree(data_c(), k=input$k)))
-  }) 
+     result.k <- kmeans(data_5, centers=input$k)
+   }) 
   
-  title <- reactive({
-    paste("Dendogram", input$dist,input$linkage, sep = " - ")
-  })
+  # data$y <- reactive({
+  #   cluster_group()$cluster
+  # }) 
   
-  cophern <- reactive({
-    cor(dist_mat(), cophenetic(data_c()))
-    })
-  
-  output$cophern_value <- renderPrint({ cophern()})
-
-  output$plot_dendogram <- renderPlot({  
-    plot(data_c(), main=title(), hang=-0.1, xlab='', labels=F, cex=0.6, sub='')
-    rect.hclust(data_c(), k=input$k, border = 2:5)
-  })
-  
-  lda.fit <- reactive({lda(cluster_group() ~., data= data[,1:13])}) 
+  lda.fit <- reactive({lda(cluster_group()$cluster ~., data= data[,1:13])}) 
   Lda.pred <- reactive({predict(lda.fit(), as.data.frame(data[,1:13]))}) 
   
-  lda.fit <- reactive({lda(cluster_group() ~., data= data[,1:13])}) 
-  Lda.pred <- reactive({predict(lda.fit(), as.data.frame(data[,1:13]))}) 
-  
-  n       <- reactive({ length(cluster_group()) })      # total number of observations
-  ng      <- reactive({ table(cluster_group())  })      # number of obs. in each group
-  group_names   <- reactive({ levels(cluster_group())  })     # name of groups
+  n       <- reactive({ length(cluster_group()$cluster) })      # total number of observations
+  ng      <- reactive({ table(cluster_group()$cluster)  })      # number of obs. in each group
+  group_names   <- reactive({ levels(cluster_group()$cluster)  })     # name of groups
   g       <- reactive({ length(group_names)})
   
   
-  misc <- reactive({table(class.true=cluster_group(), class.assigned=Lda.pred()$class)})
+  misc <- reactive({table(class.true=cluster_group()$cluster, class.assigned=Lda.pred()$class)})
   #print(misc) #CONFUSION MATRIX
-  errors <- reactive({(Lda.pred()$class != cluster_group())})
+  errors <- reactive({(Lda.pred()$class != cluster_group()$cluster)})
   APER <- reactive({
     APER=0
-    for(gi in 1:g()){
-      APER <- APER + sum(misc()[gi,-gi])/sum(misc()[gi,]) * lda.fit()$prior[gi]}
+  for(gi in 1:g()){
+    APER <- APER + sum(misc()[gi,-gi])/sum(misc()[gi,]) * lda.fit()$prior[gi]}
     APER
-  })
+    })
   
-  LdaCV.aut <- reactive({lda(cluster_group() ~., data= data[,1:13], CV=TRUE) })  
-  misc_cv <- reactive({table(class.true=cluster_group(), class.assigned=LdaCV.aut()$class)})
-  errorsCV <- reactive({(LdaCV.aut()$class != cluster_group())})
+  LdaCV.aut <- reactive({lda(cluster_group()$cluster ~., data= data[,1:13], CV=TRUE) })  
+  misc_cv <- reactive({table(class.true=cluster_group()$cluster, class.assigned=LdaCV.aut()$class)})
+  errorsCV <- reactive({(LdaCV.aut()$class != cluster_group()$cluster)})
   AERCV <- reactive({
     AERCV=0
     for(gi in 1:g()){
       AERCV <- AERCV + sum(misc_cv()[gi,-gi])/sum(misc_cv()[gi,]) * lda.fit()$prior[gi]}
     AERCV
   })
-
-  #fviz_nbclust(data_5, FUN = kmeans, method = "silhouette") 
-  #fviz_nbclust(data_5, FUN = kmeans, method = "wss")
   
+  
+  df1 <- reactive({pivot_longer(as.data.frame(t(colMeans(data_pc[cluster_group()$cluster==1,]))), cols=1:13, names_to = "Gene", values_to = "Expression")
+  df1$Group <- rep('1',13)})
+  
+  df2 <- reactive({pivot_longer(as.data.frame(t(colMeans(data_pc[cluster_group()$cluster==2,]))), cols=1:13, names_to = "Gene", values_to = "Expression")
+  df2$Group <- rep('2',13)})
+  
+  
+  df3 <- reactive({pivot_longer(as.data.frame(t(colMeans(data_pc[cluster_group()$cluster==3,]))), cols=1:13, names_to = "Gene", values_to = "Expression")
+  df3$Group <- rep('3',13)})
+  
+  # df4 <- pivot_longer(as.data.frame(t(colMeans(data_pc[group==4,]))), cols=1:13, names_to = "Gene", values_to = "Expression")
+  # df4$Group <- rep('4',13)
+  
+  total <- reactive({rbind(df1(),df2(),df3())})
+  
+  # ggplot(total, aes(fill=Group, y=Expression, x=Gene)) + 
+  #   geom_bar(position="dodge", stat="identity")
+
+  output$plot_silhouette <- renderPlot({  
+    fviz_nbclust(data_5, FUN = kmeans, method = "silhouette")
+  })
+
+  output$plot_wss <- renderPlot({  
+    fviz_nbclust(data_5, FUN = kmeans, method = "wss")
+  })
+
   output$plot_mean <- renderPlotly({
     plot_ly(data = data_plot, x = ~v1, y = ~v2, z = ~v3,
             mode   = 'markers',
@@ -194,36 +176,31 @@ server <- function(input, output) {
     plot_ly(data = data_plot, x = ~v1, y = ~v2, z = ~v3,
             mode   = 'markers',
             type="scatter3d",
-            color = as.character(cluster_group())
+            color = as.character(cluster_group()$cluster)
             #colorscale='earth'
     ) %>% layout(title = 'Visualization of clusters on first 3 PCs'
     )
     #fig <- fig %>% add_markers()
   })
-  
+
   output$plot_dist_2 <- renderPlotly({
     name = input$dist
     # generate 3d plot based on the name of clusters
     plot_ly(data = data_plot, x = ~v1, y = ~v2, z = ~v3,
             mode   = 'markers',
             type="scatter3d",
-            color = as.character(cluster_group())
+            color = as.character(cluster_group()$cluster)
             #colorscale='earth'
     ) %>% layout(title = 'Visualization of clusters on first 3 PCs'
-    )
-    #fig <- fig %>% add_markers()
-  })
-  
-  output$plot_dist_3 <- renderPlotly({
-    name = input$dist
-    # generate 3d plot based on the name of clusters
-    plot_ly(data = data_plot, x = ~v1, y = ~v2, z = ~v3,
-            mode   = 'markers',
-            type="scatter3d",
-            color = as.character(cluster_group())
-            #colorscale='earth'
-    ) %>% layout(title = 'Visualization of clusters on first 3 PCs'
-    )
+    )#  %>% add_trace(
+    #   data = data_plot[names,]
+    #   , x = ~v1
+    #   , y = ~v2
+    #   , z = ~v3
+    #   , color= "k"
+    #   , mode = "markers"
+    #   , type = "scatter3d"
+    #   , marker = list(size = 5))
     #fig <- fig %>% add_markers()
   })
   
@@ -236,9 +213,15 @@ server <- function(input, output) {
             color = as.character(Lda.pred()$class)
             #colorscale='earth'
     ) %>% layout(title = 'Visualization of classified on first 3 PCs'
-    )
+    ) })
+    
+    output$box_plot <- renderPlot({
+      ggplot(total(), aes(fill=Group, y=Expression, x=Gene)) + geom_bar(position="dodge", stat="identity")
+    })
+    
+    
     #fig <- fig %>% add_markers()
-  })
+
   
   output$table <- renderPrint({ misc()})
   output$table_CV <- renderPrint({ misc_cv()})
