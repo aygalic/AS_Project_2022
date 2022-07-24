@@ -167,7 +167,7 @@ name4=name[index_4]
 M1=M[index_1,]
 M2=M[index_2,]
 M3=M[index_3,]
-M4=M[index_4,]
+#M4=M[index_4,]
 M_new= rbind(M1,M2,M3,M4)
 library(heatmaply)
 heatmaply(data.matrix(M_new)) #heatmap of treatment ordered by the clusters
@@ -181,7 +181,7 @@ x11()
 plot(M_var)
 
 M_0.06= M[,M_var>0.04]
-heatmaply(data.matrix(M_0.06)) #we plot only the treatment with the most variability
+heatmaply(data.matrix(M_0.06)) # we plot only the treatment with the most variability
                                # it's possible that the cluster is base on the variability
 x11()
 pairs(M_0.06,col=groups) # only with the treat with most variability
