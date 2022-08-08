@@ -42,6 +42,63 @@ data_plot$cell_means= cell_means
 
 # Define server logic required to draw a histogram
 shinyServer(function(input, output) {
+  
+  output$d <- renderImage({ 
+    filename <- normalizePath(file.path('./www/images','project_scope.png'))
+    
+    list(src = filename,
+         contentType = 'image/png',
+         alt = "Data and scope")
+  }, deleteFile = FALSE)
+
+  
+  output$step1 <- renderImage({ 
+    filename <- normalizePath(file.path('./www/images','STEP1.png'))
+    
+    list(src = filename,
+         contentType = 'image/png',
+         alt = "STEP1: Clustering")
+  }, deleteFile = FALSE)
+  
+  output$step2 <- renderImage({ 
+    filename <- normalizePath(file.path('./www/images','STEP2.png'))
+    
+    list(src = filename,
+         contentType = 'image/png',
+         alt = "STEP2: Influential Genes")
+  }, deleteFile = FALSE)
+
+  output$mytable = renderDataTable({
+    columns = names(data_5)
+    if (!is.null(input$select)) {
+      columns = input$select
+    }
+    data_5[,columns,drop=FALSE]
+  })
+  
+  # output$RawData <- DT::renderDataTable(
+  #   DT::datatable({
+  #     data_5[,1:5]
+  #   },
+  #   options = list(lengthMenu=list(c(5,15,20),c('5','15','20')),pageLength=5,
+  #                  initComplete = JS(
+  #                    "function(settings, json) {",
+  #                    "$(this.api().table().header()).css({'background-color': 'moccasin', 'color': '1c1b1b'});",
+  #                    "}"),
+  #                  columnDefs=list(list(className='dt-center',targets= 5)) #targets = "_all"
+  #   ),
+  #   filter = "top",
+  #   selection = 'multiple',
+  #   style = 'bootstrap',
+  #   class = 'cell-border stripe',
+  #   rownames = T,
+  #   #colnames = c("Subregion","Municipality","Projected population","Thefts","Traffic accidents","Homicides","School deserters","Sports venues","Extortions","Personal injuries")
+  #   ))
+  # 
+  # output[["table"]] <- renderDT({
+  #   datatable(data_5, callback = JS(callback))
+  # }, server = FALSE) 
+  # 
 
   dist_mat <- reactive({
     dist(data_5, method=input$dist)

@@ -1,0 +1,14 @@
+name: clustering_by_treatment_response
+title: clustering_by_treatment_response
+username:
+account: lucamainini
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 6685907
+bundleId: 6128325
+url: https://lucamainini.shinyapps.io/clustering_by_treatment_response/
+when: 1658692076.71347
+lastSyncTime: 1658692076.71348
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: www/.DS_Store|www/images/.DS_Store

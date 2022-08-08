@@ -10,14 +10,16 @@ library(plotly)
 library(shiny)
 library(factoextra)
 
-source("../utils/nate_utils.R")
-source("../utils/exp_base_script.R")
+#source("../utils/nate_utils.R")
+#source("../utils/exp_base_script.R")
 
 ### LOAD DATA
 #setwd("/Users/lucamainini/Documents/GitHub/AS_Project_2022")
 #load(file.path("Dataset","breast_auc_data.Rdata"))
-load("breast_cns.Rda")
-data_5 = as.matrix(tosave)
+#load("breast_cns.Rda")
+#breast_auc = t(auc)
+data_5 = na.aggregate(data.auc)
+data_5 = as.matrix(data_5)
 
 ### MEANS
 cell_means = apply(data_5,1,mean)
@@ -61,13 +63,12 @@ ui <- fluidPage(
   ),
   
   
-  fluidRow(column(3,
-                  selectInput('cancer', 'Choose a cancer type', choices = cancer_types,
-                    selected = 'BREAST', multiple=TRUE)
-  )
-  
-  
-  ),
+  # fluidRow(column(3,
+  #                 selectInput('cancer', 'Choose a cancer type', choices = cancer_types,
+  #                   selected = 'BREAST', multiple=TRUE)
+  # )
+  # 
+  #),
   
   
   fluidRow(
@@ -86,11 +87,6 @@ ui <- fluidPage(
 
 # Define server logic required to draw a histogram
 server <- function(input, output) {
-  
-  data_5 = reactive({
-    block_dat(input$cancer, auc)
-  })
-  
   dist_mat <- reactive({
     dist(data_5, method=input$dist)
   })

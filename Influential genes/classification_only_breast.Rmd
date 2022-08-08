@@ -139,12 +139,13 @@ data_expression_clean$hugo_symbol = hugo_symbols
 M <- scale(data.rpkm) 
 
 threshold_l <- 1
-threshold_h <- 100 
+#threshold_h <- 100 
 
 row_var = apply(M, 1, var) #apply over rows: variability along the genes
-plot((row_var))
+plot(row_var, log="y", pch=16, lwd=1, ylab="Variance by gene", xlab="", bg="transparent")
+     #col=rgb(red = 0, green = 0, blue = 0, alpha=0.5))
 abline(h=threshold_l, col='red')
-abline(h=threshold_h, col='red')
+#abline(h=threshold_h, col='red')
 
 sum(row_var > threshold_l & row_var < threshold_h)
 plot(row_var[row_var > threshold_l & row_var < threshold_h])
@@ -396,6 +397,7 @@ chosen <- colnames(breast_data_treatment_auc)
 
 hugo_symbols = to_return_2$hugo_symbol
 data.rpkm <- to_return_2[,-47]
+selected_genes <- c("RPSA" ,   "TRBV9",   "LY6E",    "HSP90B1", "IGHD"  ,  "SLC7A5"  ,"PCNA") #<--- modificato
 data_temp = data.rpkm[match(selected_genes,hugo_symbols),chosen]
 
 data_expression <- t(data_temp)

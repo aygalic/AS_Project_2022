@@ -1,6 +1,6 @@
 #COULD BE A PRE-PROCESSING PIPELINE, BEFORE WE STANDARDIZE THIS 
 
-path = "/Users/nathanielnethercott/Desktop/School/Polimi/2021:2022/AS/AS_Project_2022/Dataset"
+path = "/Users/lucamainini/Documents/GitHub/AS_Project_2022/Dataset"
 #data import 
 data_patient = read.delim(file.path(path, "data_clinical_patient.txt"), header = TRUE, comment.char = '#')
 data_sample = read.delim(file.path(path, "data_clinical_sample.txt"), header = TRUE, comment.char = '#')
