@@ -143,7 +143,7 @@ shinyUI(fluidPage(theme = shinytheme("united"), #cerulean, united, flatly
                                         column(5,plotlyOutput("plot_mean_n")),
                                         column(5,plotlyOutput("plot_meth"))
                                       ),
-                                      h2("Results of LDA Classifation using influential gene "),
+                                      h2("Results of LDA Classification using influential genes "),
                                       fluidRow(
                                         
                                         column(5,plotlyOutput("plot_classified_n")),
@@ -208,7 +208,7 @@ shinyUI(fluidPage(theme = shinytheme("united"), #cerulean, united, flatly
                                         column(5,plotlyOutput("plot_dist_2"))
                                       ),
                                       
-                                      h2("Results of LDA Classifation using influential gene "),
+                                      h2("Results of LDA Classification using influential genes "),
                                       fluidRow(
                                         
                                         column(5,plotlyOutput("plot_classified")),
